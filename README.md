@@ -43,22 +43,6 @@ If you wish to help contribute, you need to fork this project
 * 5]Integrate BFWDK into your code (API list below)
 * 6]Run your website and enjoy!
 
-
-###BFWDK API List
---------------
-
-### Bitcoin Generate New Address
-Command/Function/Method
-
-    bitcoin_generate_new_address(label)
-
-Purpose 
-
-    To query Bitcoin client to generate and return a new valid Bitcoin address.
-
-Parameters
-
-    Label (optional): If set then this Bitcoin address will have the coressponding label that is set
-    
-
+Please see the BFWDK Wiki for more API call documentation
+ =============
  
