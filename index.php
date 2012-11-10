@@ -1,7 +1,7 @@
 <?php
-	//Programmer: ???
-	//Date: ???
-	//Purpose: ???
+	//Programmer: Shane B. (Xenland)
+	//Date: Nov, 9th 2012
+	//Purpose: To provide a drop-in library for php programmers that are not educated in the art of financial security and programming methods.
 	
 	//Define some Bitcoin client configuration settings
 	$btcclient["https"] = "http"; //HTTPS is recommended....
