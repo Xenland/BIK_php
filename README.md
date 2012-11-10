@@ -36,12 +36,12 @@ Please donate if you currently use and appreciate this software, I plan to conti
 If you wish to help contribute, you need to fork this project
 
 ###Installation instructions
-1]Download this library
-2]Extract it into your web development working directory
-3]Edit the "BFWDK_library.php" file to point to your Bitcoin client (It is recommended to use HTTPS connections to prevent your credentails from being viewed when flowing through the internet)
-4]Include the "BFWDK_library.php" file into your php code
-5]Integrate BFWDK into your code (API list below)
-6]Run your website and enjoy!
+* 1] Download this library
+* 2]Extract it into your web development working directory
+* 3]Edit the "BFWDK_library.php" file to point to your Bitcoin client (It is recommended to use HTTPS connections to prevent your credentails from being viewed when flowing through the internet)
+* 4]Include the "BFWDK_library.php" file into your php code
+* 5]Integrate BFWDK into your code (API list below)
+* 6]Run your website and enjoy!
 
 
 ###BFWDK API List
