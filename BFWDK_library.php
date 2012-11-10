@@ -125,7 +125,7 @@
 			Parameter(s) Explaination
 			$amount_due: This should be expressed in satoshi. For one Bitcoin 100000000 should be entered in.
 	*/
-	function bitcoin_generate_reciept($amount_due=0){
+	function bitcoin_generate_receipt($amount_due_in_satoshi=0){
 		global $bfwdk_integrity_check, $bfwdk_settings;
 		
 		//Define local/private variables
@@ -144,10 +144,10 @@
 			
 			//Sanatize variables
 				//amount_due
-				$amount_due = intval($amount_due);
+				$amount_due_in_satoshi = intval($amount_due_in_satoshi);
 				
-				if($amount_due <= 0){
-					$amount_due = 0;
+				if($amount_due_in_satoshi <= 0){
+					$amount_due_in_satoshi = 0;
 				}
 				
 			/* 
@@ -157,8 +157,8 @@
 				
 			//Generate a new address with the label being the reciept details. Label format as follows: (timestamp of creation | satoshi due | timestamp when balance confirmed | checksum )
 				$new_address_timestamp_of_creation = time();
-				$new_address_label_checksum = hash($bfwdk_settings["hash_type"], $new_address_timestamp_of_creation."|".$amount_due);
-				$new_address_label = $new_address_timestamp_of_creation."|".$amount_due."|".$new_address_label_checksum;
+				$new_address_label_checksum = hash($bfwdk_settings["hash_type"], $new_address_timestamp_of_creation."|".$amount_due_in_satoshi);
+				$new_address_label = $new_address_timestamp_of_creation."|".$amount_due_in_satoshi."|".$new_address_label_checksum;
 				
 				$new_address_status = bitcoin_generate_new_address($new_address_label);
 				
