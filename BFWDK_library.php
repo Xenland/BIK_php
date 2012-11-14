@@ -1,7 +1,24 @@
 <?php
-	//Programmer: Shane B. (Xenland)
-	//Date: Nov, 9th 2012
-	//Purpose: To provide a drop-in library for php programmers that are not educated in the art of financial security and programming methods.
+/*
+	Programmer: Shane B. (Xenland)
+	Date: Nov, 9th 2012
+	Purpose: To provide a drop-in library for php programmers that are not educated in the art of financial security and programming methods.
+	Version: 0.0.x
+	
+	License (AGPL)
+		"Bitcoin Financial Web Development Kit" (also referred to as "BFWDK") is free software: 
+		you can redistribute it and/or modify it under the terms of the Affero General Public License 
+		as published by the Free Software Foundation, either version 3 of the License, or
+		(at your option) any later version.
+
+		BFWDK is distributed in the hope that it will be useful,
+		but WITHOUT ANY WARRANTY; without even the implied warranty of
+		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+		Affero General Public License for more details.
+
+		You should have received a copy of the Affero General Public License
+		along with BFWDK.  If not, see http://www.gnu.org/licenses/agpl-3.0.html
+*/
 	
 	//Define BFWDK settings
 	$bfwdk_settings["hash_type"] = "sha256"; //What should the hash() function use?
@@ -213,6 +230,99 @@
 
 			return $output;
 		}
+		
+		
+		
+		/*
+			========================= This function isn't ready for use yet =========================
+			bitcoin_list_transactions()
+			Purpose: query Bitcoin and return all transactions
+		*/
+		function bitcoin_list_transactions($account='', $count=9999999999999, $from=0){
+			global $bfwdk_integrity_check, $bfwdk_settings;
+			
+			//Define local/private variables
+			$output["return_status"] = -1;
+			
+			/* Return status codes
+				-1 = Failure to generate address
+				1 = Success 
+				
+				100 = Failure to connect to Bitcoin client
+			*/
+			
+			//Open Bitcoin connection
+				$new_btcclient_connection = bitcoin_open_connection();
+				
+			//Bitcoin connection open?
+				if($new_btcclient_connection["return_status"] == 1){
+					$new_btcclient_connection["connection"]->listtransactions($account, $count, $from);
+					
+				}else{
+					//Connection to Bitcoin failed
+					$output["return_status"] = 100;
+				}
+			
+			return $output;
+		}
+		
+		
+		
+		/*
+			bitcoin_get_received_by_address()
+			Purpose: query Bitcoin and return the total overall acumulated Bitcoins for this account
+		*/
+		function bitcoin_get_received_by_address($bitcoin_address='', $minimum_confirmations=1){
+			global $bfwdk_integrity_check, $bfwdk_settings;
+			
+			//Define local/private variables
+			$output["return_status"] = -1;
+			$output["total_received_in_satoshi"] = 0; //Integers only
+			$output["total_received_in_bitcoin"] = 0.00000000; //Decimal/Float (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
+			
+			/* Return status codes
+				-1 = Failure to generate address
+				1 = Success 
+				
+				100 = Failure to connect to Bitcoin client
+				101 = Failure to retrieve balance
+			*/
+			
+			//Sanatize incomming parameters
+				$minimum_confirmations = floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
+			
+			//Create a floor limit of zero
+				if($minimum_confirmations <= 0){
+					$minimum_cofirmations = 0;
+				}
+			
+			//Open Bitcoin connection
+				$new_btcclient_connection = bitcoin_open_connection();
+				
+			//Bitcoin connection open?
+				if($new_btcclient_connection["return_status"] == 1){
+					$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getreceivedbyaddress($bitcoin_address, $minimum_confirmations);
+					
+					if($tmp_total_recieved_in_bitcoin >= 0){
+						//Looks like a success!
+						$output["return_status"] = 1;
+						
+						//Return the values....
+						$output["total_received_in_bitcoin"] = $tmp_total_received_in_bitcoin; 
+						$output["total_received_in_satoshi"] = $tmp_total_received_in_bitcoin * 100000000; //Convert Bitcoins to satoshi so we can do math with integers.
+						
+					}else{
+						//Failure
+						$output["return_status"] = 101;
+					}
+					
+				}else{
+					//Connection to Bitcoin failed
+					$output["return_status"] = 100;
+				}
+			
+			return $output;
+		}
 
 //--------------------------------------------------------------------------------------------------------------
 //			HIGH LEVEL FUNCTIONS
@@ -316,7 +426,7 @@
 			
 			if($bitcoin_label_information["return_status"] == 1 && $bitcoin_label_information["checksum_match"] == 1){
 				//Label & checksum information was successfully outputted, lets query Bitcoin for some reciept information
-								
+				
 			}
 		}else{
 			//No bitcoin address was set
@@ -338,5 +448,6 @@
 	Below is some example codes you can uncomment, run, test and view their output.
 */
 //var_dump(bitcoin_generate_receipt(100000000));
-var_dump(bitcoin_get_address_label('1rA3QqvQXVCFa3tfPK5puxrNSf1SUvxgF'));
+//var_dump(bitcoin_get_address_label(''));
+//var_dump(bitcoin_get_received_by_address('', 0));
 ?>
