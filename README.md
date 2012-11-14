@@ -12,6 +12,10 @@ Aimed at assisting in cutting down development time to integrate Bitcoins' funct
 * Does not rely on a database but if a database is used more features are available with out compromising security.
 * Fast, Quick, Effecient
 
+###PHP Requirements
+* PHP5
+* SSL support (if you're using HTTPS to communicate to bitcoind with)
+
 ###(Offcial) Bitcoin Donation Address
     13ow3MfnbksrSxdcmZZvkhtv4mudsnQeLh
     
