@@ -50,3 +50,7 @@ If you wish to help contribute, you need to fork this project
 Please see the BFWDK Wiki for more API call documentation
 =============
  
+ 
+ ###Thank you and respect
+ Thanks to Mike Gogulskis' Bitcoin-php project for helping me with this one.
+ Also to Satoshi Nakomoto for all the hard work put into Bitcoin
