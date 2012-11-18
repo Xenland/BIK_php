@@ -288,8 +288,8 @@
 				101 = Failure to retrieve balance
 			*/
 			
-			//Sanatize incomming parameters
-				$minimum_confirmations = floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
+			// Sanitize incoming parameters
+				$minimum_confirmations = (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
 			
 			//Create a floor limit of zero
 				if($minimum_confirmations <= 0){
