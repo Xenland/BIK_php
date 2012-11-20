@@ -21,21 +21,6 @@
 		You should have received a copy of the Affero General Public License
 		along with BFWDK.  If not, see http://www.gnu.org/licenses/agpl-3.0.html
 */
-	
-	//Define BFWDK settings
-	$bfwdk_settings["hash_type"] = "sha256"; //What should the hash() function use?
-	
-	//Define some Bitcoin client configuration settings
-	$btcclient["https"]	= "http"; //HTTPS is recommended....
-	$btcclient["host"]	= "127.0.0.1"; //Just the domainname don't put Http:// or https:// that is already taken care of.
-	$btcclient["user"]	= "username";
-	$btcclient["pass"]	= "password";
-	$btcclient["port"]	= "4367";
-	
-	//Define Integrity checks (checksum details)
-	$bfwdk_integrity_check = 'TypeALongRandomStringHere'; //Generate a random string that is atleast 4096 characters long, Random number here:  http://textmechanic.com/Random-String-Generator.html
-	
-	
 	/*
 	=================================================
 	Begin loading necessary dependencies to run this script (Probubly don't need to touch this, just make sure you know what your doing)
