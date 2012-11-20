@@ -123,7 +123,7 @@
 				1 = Success (Address generated)
 				
 				100 = Failure to connect to Bitcoin client
-				101 = Address is too long or too short
+				101 = Address is invalid
 			*/
 			
 			//Open Bitcoin connection
@@ -141,13 +141,15 @@
 						}
 						
 						
-						if(strlen($tmp_new_address) > 20){
+						$generated_address_is_valid = bitcoin_validate_address($tmp_new_address);
+						if($generated_address_is_valid["isvalid"] == 1){
 							//Strlen looks okay
 							$output["return_status"] = 1;
 							
 							$output["new_address"] = $tmp_new_address;
+							
 						}else{
-							//This address is too long or too short, either way its invalid, failure!
+							//This address is invalid
 							$output["return_status"] = 101;
 						}
 				}else{
@@ -155,6 +157,115 @@
 					$output["return_status"] = 100;
 				}
 				
+			return $output;
+		}
+		
+		
+		
+		/*
+			bitcoin_validate_address()
+			Purpose: query Bitcoin and detect if string is a valid Bitcoin address, returns -1 if no valid address was detected
+		*/
+		function bitcoin_validate_address($bitcoin_address=''){
+		
+			
+			
+			//Define local/private variables
+			$output["return_status"] = -1;
+			$output["isvalid"] = 0; //(Binary)
+			$output["ismine"] = 0; //(Binary)
+			$output["isscript"] = 0; //(Binary)
+			$output["pubkey"] = ''; //(String)
+			$output["iscompressed"] = 0; //(Binary)
+			$output["label"] = ''; //(String)
+			
+			/* Return status codes
+				-1 = Failure to validate address
+				1 = Success (Command was successfully executed, This Does not mean this is a valid address!, It just means you can trust the returned information is true)
+				
+				100 = Failure to connect to Bitcoin
+			*/
+			
+			//Before attempting to open Bitcoin for querying check if the Bitcoin address was set
+			if($bitcoin_address != ''){
+				
+				//Open Bitcoin connection
+					$new_btcclient_connection = bitcoin_open_connection();
+					
+				//Bitcoin connection open?
+					if($new_btcclient_connection["return_status"] == 1){
+						//Yes BTC client has been successfully opened
+							//Attempt to query Bitcoin if this is a valid Bitcoin address
+							$tmp_command_executed = 0; // (Binary)
+							try{
+								$tmp_valid_bitcoin_address = $new_btcclient_connection["connection"]->validateaddress($bitcoin_address);
+								$tmp_command_executed = 1;
+								
+							}catch(Exception $e){
+								$tmp_command_executed = 0;
+							}
+							
+							
+							if($tmp_command_executed == 1){
+								$output["return_status"] = 1;
+								
+								if($tmp_valid_bitcoin_address["isvalid"] == 1){
+									//This is a valid address report it as such
+									$output["return_status"] = 1;
+									
+									//set isvalid
+									$output["isvalid"] = 1;
+									
+									//Set ismine
+									if($tmp_valid_bitcoin_address["ismine"] == 1){
+										$output["ismine"] = 1;
+									}else{
+										$output["ismine"] = 0;
+									}
+									
+									//Set isscript
+									if($tmp_valid_bitcoin_address["isscript"] == 1){
+										$output["isscript"] = 1;
+									}else{
+										$output["isscript"] = 0;
+									}
+									
+									
+									//Set pubkey
+									$output["pubkey"] = strip_tags($tmp_valid_bitcoin_address["pubkey"]);
+									
+									//Set iscompressed
+									if($tmp_valid_bitcoin_address["iscompressed"] == 1){
+										$output["iscompressed"] = 1;
+									}else{
+										$output["iscompressed"] = 0;
+									}
+									
+									//Set label (A developer should use Bitcoin_Get_Address_Label to aquire the Unmodifed version of the label)
+ 									$output["label"] = strip_tags($tmp_valid_bitcoin_address["account"]);
+									
+								}else{
+									//This is not a valid address report it as such
+									$output["return_status"] = 1;
+									$output["isvalid"] = 0;
+								}
+								
+							}else if($tmp_command_executed == 0){
+								$output["return_status"] = -1;
+							}
+
+					}else{
+						//Report that we had connection issues
+						$output["return_status"] = 100;
+					}
+					
+			}else{
+				//Bitcoin address not set | Invalid return error
+				$output["return_status"] = 1;
+				
+				$output["isvalid"] = 0;
+			}
+			
 			return $output;
 		}
 		
@@ -285,8 +396,6 @@
 			//Bitcoin connection open?
 				if($new_btcclient_connection["return_status"] == 1){
 					$output["transaction_list"] = $new_btcclient_connection["connection"]->listtransactions($account, $count, $from);
-					
-					print_r($output["transaction_list"]);
 				}else{
 					//Connection to Bitcoin failed
 					$output["return_status"] = 100;
@@ -308,8 +417,8 @@
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
-			$output["total_received_in_satoshi"] = 0; //Integers only
-			$output["total_received_in_bitcoin"] = 0.00000000; //Decimal/Float (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
+			$output["total_received_in_satoshi"] = (int) 0; //Integers only
+			$output["total_received_in_bitcoin"] = (double) 0.00000000; //Decimal/Float/Double (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
 			
 			/* Return status codes
 				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
@@ -340,33 +449,40 @@
 				//Bitcoin connection open?
 					if($new_btcclient_connection["return_status"] == 1){
 						//Verify this is a valid Bitcoin address
+						$tmp_is_valid_address = bitcoin_validate_address($bitcoin_address);
 						
-						$tmp_command_executed = 0; // (Binary)
-						try{
-							$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getreceivedbyaddress($bitcoin_address, $minimum_confirmations);
-							$tmp_command_executed = 1;
-						}catch(Exception $e){
-							$tmp_command_executed = 0;
-						}
+						if($tmp_is_valid_address["isvalid"] == 1){
+							//Define command executed
+							$tmp_command_executed = 0; // (Binary)
+							try{
+								$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getreceivedbyaddress($bitcoin_address, $minimum_confirmations);
+								$tmp_command_executed = 1;
+							}catch(Exception $e){
+								$tmp_command_executed = 0;
+							}
+							
 						
-						
-						//Looks like the command was successfully queried, lets continue with execution of the rest of this function
-						if($tmp_command_executed == 1){
-							if($tmp_total_recieved_in_bitcoin >= 0){
-								//Looks like a success!
-								$output["return_status"] = 1;
-								
-								//Return the values....
-								$output["total_received_in_bitcoin"] = $tmp_total_received_in_bitcoin; 
-								$output["total_received_in_satoshi"] = $tmp_total_received_in_bitcoin * 100000000; //Convert Bitcoins to satoshi so we can do math with integers.
-								
+							//Looks like the command was successfully queried, lets continue with execution of the rest of this function
+							if($tmp_command_executed == 1){
+								if($tmp_total_received_in_bitcoin >= 0){
+									//Looks like a success!
+									$output["return_status"] = 1;
+									
+									//Return the values....
+									$output["total_received_in_bitcoin"] = (double) $tmp_total_received_in_bitcoin; 
+									$output["total_received_in_satoshi"] = (int) floor($tmp_total_received_in_bitcoin * 100000000); //Convert Bitcoins to satoshi so we can do math with integers.
+									
+								}else{
+									//Failure
+									$output["return_status"] = 101;
+								}
 							}else{
-								//Failure
+								//Failure to query command from Bitcoind, return failure status
 								$output["return_status"] = 101;
 							}
 						}else{
-							//Failure to query command from Bitcoind, return failure status
-							$output["return_status"] = 101;
+							//Bitcoin address is invalid
+							$output["return_status"] = 102;
 						}
 						
 					}else{
@@ -393,7 +509,7 @@
 			Parameter(s) Explaination
 			$amount_due: This should be expressed in satoshi. For one Bitcoin 100000000 should be entered in.
 	*/
-	function bitcoin_generate_receipt($amount_due_in_satoshi=0){
+	function bitcoin_generate_receipt($amount_due_in_satoshi = 0, $product_id_array = Array()){
 		global $bfwdk_integrity_check, $bfwdk_settings;
 		
 		//Define local/private variables
@@ -411,9 +527,9 @@
 			*/
 			
 			//Sanatize variables
-				//amount_due
-				$amount_due_in_satoshi = intval($amount_due_in_satoshi);
+				$amount_due_in_satoshi = (int) intval($amount_due_in_satoshi);
 				
+				//Apply limits to $amount_due_in_satoshi to 0 and 21 mill
 				if($amount_due_in_satoshi <= 0){
 					$amount_due_in_satoshi = 0;
 				}
@@ -505,7 +621,6 @@
 **********************************************************************/
 	error_reporting($current_error_reporting);
 /*********************END REVERTING ERROR REPORTING************/
-
-
+var_dump(bitcoin_validate_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ'));
 var_dump(bitcoin_get_received_by_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ', 0));
 ?>
