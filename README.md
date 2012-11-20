@@ -1,4 +1,4 @@
-Bitcoin Financial Web Development Kit
+Bitcoin Development Kit
 =============
 Important Notice: Remember this is considered still in development phase, it is not recommended to use this production yet.
 
