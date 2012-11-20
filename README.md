@@ -4,6 +4,7 @@ Important Notice: Remember this is considered still in development phase, it is 
 
 ###API, Wiki, Documentation
 [Click here to see API Call Index page](https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki/API-Call-Index)
+[Click Here to see the Main Wiki Page](https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki)
 
 ###Purpose
 Aimed at assisting in cutting down development time to integrate Bitcoins' functionality into your php projects.
