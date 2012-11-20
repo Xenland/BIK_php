@@ -670,9 +670,8 @@
 **********************************************************************/
 	error_reporting($current_error_reporting);
 /*********************END REVERTING ERROR REPORTING************/
-//var_dump(bitcoin_validate_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ'));
-//var_dump(bitcoin_get_received_by_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ', 0));
+//var_dump(bitcoin_validate_address(''));
+//var_dump(bitcoin_get_received_by_address('', 0));
 //var_dump(bitcoin_generate_receipt(100000000, array(1,2,3,4,5,6)));
-
-var_dump(bitcoin_get_receipt_information('19inU5iumWbtBfd3SM3n9vSUE6BUyh8Rh4'));
+//var_dump(bitcoin_get_receipt_information(''));
 ?>
