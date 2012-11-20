@@ -2,7 +2,7 @@ Bitcoin Financial Web Development Kit
 =============
 Important Notice: Remember this is considered still in development phase, it is not recommended to use this production yet.
 
-###API, Wiki, Documentation
+###API, Wiki, Documentation, Instructions
 * [Click here to see API Call Index page](https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki/API-Call-Index)
 * [Click Here to see the Main Wiki Page](https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki)
 
