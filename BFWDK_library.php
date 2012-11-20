@@ -44,7 +44,7 @@
 		
 		//Set error_reporting for this page
 		error_reporting(0);
-		error_reporting(E_ERROR | E_WARNING | E_PARSE); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
+		//error_reporting(E_ERROR | E_WARNING | E_PARSE); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 	
 	
 	
