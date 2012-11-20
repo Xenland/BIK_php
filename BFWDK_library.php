@@ -59,6 +59,7 @@
 		
 		//Set error_reporting for this page
 		error_reporting(0);
+		error_reporting(E_ERROR | E_WARNING | E_PARSE); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 	
 	
 	
@@ -316,44 +317,66 @@
 				
 				100 = Failure to connect to Bitcoin client
 				101 = Failure to retrieve balance
+				102 = Invalid Bitcoin address was set
 			*/
 			
-			//if($bitcoin_address
-			
 			//Sanatize incomming parameters
+				$bitcoin_address = strip_tags($bitcoin_address); //I went with strip_tags for now, all I can think of is perhaps someone enables error reporting somehow and made the Bitcoin address into a XSS/XSRF attack made up of a string of javavscript)
 				$minimum_confirmations = (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
 			
 			//Create a floor limit of zero
 				if($minimum_confirmations <= 0){
 					$minimum_cofirmations = 0;
 				}
-			
-			//Open Bitcoin connection
-				$new_btcclient_connection = bitcoin_open_connection();
 				
-			//Bitcoin connection open?
-				if($new_btcclient_connection["return_status"] == 1){
-					$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getreceivedbyaddress($bitcoin_address, $minimum_confirmations);
+				
+				
+			//Before, connecting to bitcoin make sure that "Bitcoin address" is indeed set, scince we know for sure Bitcoin will error upon invalid Bitcoin address
+			if($bitcoin_address != ''){
+				
+				//Open Bitcoin connection
+					$new_btcclient_connection = bitcoin_open_connection();
 					
-					if($tmp_total_recieved_in_bitcoin >= 0){
-						//Looks like a success!
-						$output["return_status"] = 1;
+				//Bitcoin connection open?
+					if($new_btcclient_connection["return_status"] == 1){
+						//Verify this is a valid Bitcoin address
 						
-						//Return the values....
-						$output["total_received_in_bitcoin"] = $tmp_total_received_in_bitcoin; 
-						$output["total_received_in_satoshi"] = $tmp_total_received_in_bitcoin * 100000000; //Convert Bitcoins to satoshi so we can do math with integers.
+						$tmp_command_executed = 0; // (Binary)
+						try{
+							$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getreceivedbyaddress($bitcoin_address, $minimum_confirmations);
+							$tmp_command_executed = 1;
+						}catch(Exception $e){
+							$tmp_command_executed = 0;
+						}
+						
+						
+						//Looks like the command was successfully queried, lets continue with execution of the rest of this function
+						if($tmp_command_executed == 1){
+							if($tmp_total_recieved_in_bitcoin >= 0){
+								//Looks like a success!
+								$output["return_status"] = 1;
+								
+								//Return the values....
+								$output["total_received_in_bitcoin"] = $tmp_total_received_in_bitcoin; 
+								$output["total_received_in_satoshi"] = $tmp_total_received_in_bitcoin * 100000000; //Convert Bitcoins to satoshi so we can do math with integers.
+								
+							}else{
+								//Failure
+								$output["return_status"] = 101;
+							}
+						}else{
+							//Failure to query command from Bitcoind, return failure status
+							$output["return_status"] = 101;
+						}
 						
 					}else{
-						//Failure
-						$output["return_status"] = 101;
-						
-						var_dump($tmp_total_received_in_bitcoin);
+						//Connection to Bitcoin failed
+						$output["return_status"] = 100;
 					}
-					
-				}else{
-					//Connection to Bitcoin failed
-					$output["return_status"] = 100;
-				}
+			}else{
+				//Bitcoin address not set, return software error
+				$output["return_status"] = 102;
+			}
 			
 			return $output;
 		}
@@ -483,4 +506,6 @@
 	error_reporting($current_error_reporting);
 /*********************END REVERTING ERROR REPORTING************/
 
+
+var_dump(bitcoin_get_received_by_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ', 0));
 ?>
