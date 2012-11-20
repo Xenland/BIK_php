@@ -25,15 +25,17 @@
 /*
 	BENCH MARK TESTING
 	===================
-	UNCOMMENT ALL OF THE BELOW
 */
+
+$pass_html = '<span style="color:darkgreen;font-weight:bold;">PASS</span>';
+$fail_html =  '<span style="color:red;font-weight:bold;">FAIL</span>';
 
 //Test if system supports 21 million bitcoins in satoshi value (210 Trillion)
 $twohundredtentrillion_test = 21000000 * 100000000;
 if(is_int($twohundredtentrillion_test) == true){
-	$twohundredtentrillion_test_status = '<span style="color:darkgreen;font-weight:bold;">PASS</span>';
+	$twohundredtentrillion_test_status = $pass_html;
 }else{
-	$twohundredtentrillion_test_status = '<span style="color:red;font-weight:bold;">FAIL</span>';
+	$twohundredtentrillion_test_status = $fail_html;
 }
 echo "<br/>--------------------------------<br/>";
 echo "210 Trillion currency satoshi support";

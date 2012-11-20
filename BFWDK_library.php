@@ -270,11 +270,13 @@
 			global $bfwdk_integrity_check, $bfwdk_settings;
 			
 			//Define local/private variables
-			$output["return_status"] = -1;
-			$output["address_label"] = '';
-			$output["checksum_match"] = -1; // -1=Unknown; 0=False; 1= Success, Checksum good
-			$output["amount_due_in_satoshi"] = 0; //Amount due (according to the label and checksum verification)
-			$output["creation_of_receipt_timestamp"] = 0; //Timestamp upon when the customer created the reciept (according to label and checksum verification)
+			$output["return_status"]			= -1;
+			$output["address_label"]			= '';
+			$output["checksum"]			= '';
+			$output["checksum_match"]		= -1; // -1=Unknown; 0=False; 1= Success, Checksum good
+			$output["amount_due_in_satoshi"]	= 0; //Amount due (according to the label and checksum verification)
+			$output["timestamp_generated"]	= 0; //Timestamp upon when the customer created the reciept (according to label and checksum verification)
+			$output["products_in_receipt"]	= Array();
 			
 			/* Return status codes
 				-1 = Failure to generate address
@@ -311,35 +313,37 @@
 					
 						//Label retrieval was a success.... return data
 						$output["address_label"] = $tmp_address_label;
-						
-						//Return status success
-						$output["return_status"] = 1;
-						
-						/*
-							We have successfully retrieved the label, lets check its checksum and report the values
-						*/
-							$tmp_address_label_split = explode("|", $tmp_address_label);
-						
-							$output["amount_due_in_satoshi"] = intval($tmp_address_label_split[1]);
-							$output["creation_of_receipt_timestamp"] = intval($tmp_address_label_split[0]);
-							
-							/*
-								Check checksum
-								
-							*/
-							$tmp_checksum =  hash($bfwdk_settings["hash_type"], $tmp_address_label_split[0]."|".$tmp_address_label_split[1]."|".$bfwdk_integrity_check);
 
-							if($tmp_checksum == $tmp_address_label_split[2]){
-								//Checksum looks good
-								$output["checksum_match"] = 1;
-								
-							}else{
-								//Checksum dosen't look good, MAKE FAIL STATUS!!
-								$output["checksum_match"] = 0;
-								
-								//Checksum didn't checkout, this function is considered false.
-								$output["return_status"] = 102;
-							}
+						//Decode json into PHP array
+						$unverified_receipt_information = Array();
+						$unverified_receipt_information = json_decode($tmp_address_label, true);
+
+						//Save checksum, then remove the checksum from the json information and verify
+						$tmp_store_checksum = $unverified_receipt_information["checksum"];
+					
+						//Temporarily clear the checksum value to verify checksum
+						$unverified_receipt_information["checksum"] = '';
+						
+						//Make runtime hash/checksum
+						$receipt_data_checksum = hash($bfwdk_settings["hash_type"], json_encode($unverified_receipt_information));
+						
+						//Compare runtime hash /checksum with the loaded hash/checksum
+						if($tmp_store_checksum == $receipt_data_checksum){
+							//Looks like the checksum is valid, extract values from json label (Don't forget to put back the checksum in the array)
+							$unverified_receipt_information["checksum"] = $tmp_store_checksum;
+							
+							$output["checksum"]			= $tmp_store_checksum;
+							$output["checksum_match"]		= 1;
+							$output["timestamp_generated"]	= (int) $unverified_receipt_information["timestamp_generated"];
+							$output["amount_due_in_satoshi"]	= (int) intval($unverified_receipt_information["amount_due_in_satoshi"]);
+							$output["products_in_receipt"]	= $unverified_receipt_information["products_in_receipt"];
+							
+							//Return status success
+							$output["return_status"] = 1;
+						}else{
+							//Return status fail
+							$output["return_status"] = 102;
+						}	
 					}else{
 						//Label retrieval wasen't a success....
 						$output["return_status"] = 101;
@@ -493,6 +497,7 @@
 			
 			Parameter(s) Explaination
 			$amount_due: This should be expressed in satoshi. For one Bitcoin 100000000 should be entered in.
+			$product_id_array: This has to be an array regardless of key/pair data/value count
 	*/
 	function bitcoin_generate_receipt($amount_due_in_satoshi = 0, $product_id_array = Array()){
 		global $bfwdk_integrity_check, $bfwdk_settings;
@@ -511,30 +516,53 @@
 				102 = Failure to generate address
 			*/
 			
+			//Define receipt data array
+			$receipt_data_checksum					= '';
+			$receipt_data_json_encoded				= '';
+			$receipt_data							= Array();
+			$receipt_data["checksum"]				= ''; //This is blank before checksum is created, that way we can verify it securly later on.
+			$receipt_data["timestamp_generated"]		= time();
+			$receipt_data["amount_due_in_satoshi"]	= (int) 0;
+			$receipt_data["products_in_receipt"]		= Array();
+			
+			
 			//Sanatize variables
-				$amount_due_in_satoshi = (int) intval($amount_due_in_satoshi);
+				$amount_due_in_satoshi = (int) floor(intval($amount_due_in_satoshi));
 				
 				//Apply limits to $amount_due_in_satoshi to 0 and 21 mill
-				if($amount_due_in_satoshi <= 0){
-					$amount_due_in_satoshi = 0;
-				}
+					if($amount_due_in_satoshi <= 0){
+						$amount_due_in_satoshi = 0;
+					}
 				
-			/* 
-				Attempt to generate an address 
-				and label that address with the required reciept information
-			*/
+				//Loop through all product ids in $product_id_address and convert them to integers
+					$num_product_ids_in_array = count($product_id_array);
+					
+					//while($a = 0; $a < $num_product_ids_in_array; $a += 1){
+					//$product_id_array[$i] = floor($product_id_array[$i]);
+					//}
+
+				//Assign product ids to the $receipt_data array
+				$receipt_data["products_in_receipt"] = $product_id_array;
 				
-			//Generate a new address with the label being the reciept details. Label format as follows: (timestamp of creation | satoshi due | timestamp when balance confirmed | checksum )
-				$new_address_timestamp_of_creation = time();
-				$new_address_label_checksum = hash($bfwdk_settings["hash_type"], $new_address_timestamp_of_creation."|".$amount_due_in_satoshi."|".$bfwdk_integrity_check);
-				$new_address_label = $new_address_timestamp_of_creation."|".$amount_due_in_satoshi."|".$new_address_label_checksum;
+				//JSON Encode
+				$receipt_data_json_encoded = json_encode($receipt_data);
+
+				//Generate a checksum (Then amend the encoded json data with the checksum)
+				$receipt_data_checksum = hash($bfwdk_settings["hash_type"], $receipt_data_json_encoded);
 				
-				$new_address_status = bitcoin_generate_new_address($new_address_label);
+				//Amend the receipt array to contain the checksum (Then update the json encoded variable)
+				$receipt_data["checksum"] = $receipt_data_checksum;
+				
+				//Update the JSON Encoded variables
+				$receipt_data_json_encoded = json_encode($receipt_data);
+
+				//Attempt to generate a new address with the receipt details as the label
+				$new_address_status = bitcoin_generate_new_address($receipt_data_json_encoded);
 				
 				if($new_address_status["return_status"] == 1){
 					//Success!
 						$output["new_address"] = $new_address_status["new_address"];
-						$output["checksum"] = $new_address_label_checksum;
+						$output["checksum"] = $receipt_data_checksum;
 						
 						//Report success
 						$output["return_status"] = 1;
@@ -565,27 +593,63 @@
 			Parameter(s) Explaination
 			No parmeter(s) just yet
 	*/
-	function bitcoin_get_reciept_information($bitcoin_address){
+	function bitcoin_get_receipt_information($bitcoin_address=''){
 		global $bfwdk_integrity_check, $bfwdk_settings;
 		
 		//Define local/private variables
-			$output["return_status"] = -1;
+			$output["return_status"]			= -1;
+			$output["checksum"]			= '';
+			$output["timestamp_generated"]	= (int) 0;
+			$output["amount_due_in_satoshi"]	= (int) 0;
+			$output["products_in_receipt"]	= Array();
 			
 		/* Return status codes
 			-1 = Failure to collect information on the reciept
 			1 = Success (Information was successfully retrieved)
 			
 			100 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
+			101 = Checksum didn't match don't trust any information associated with this receipt (Besides the obvious security of the block chain, like the current balance and the address is okay to trust)
+			103 = Failure to connect to bitcoin clinet
+			104 = get address label function failed;
 		*/
 		
-		if(strlen($bitcoin_address) == 0 || $bitcoin_address == ''){
+			/* Return status codes
+				-1 = Failure to generate address
+				1 = Success (Address label successfully retrieved)
+				
+				100 = Failure to connect to Bitcoin client
+				101 = Bitcoin was successfully connected to, but for unknown reasons we were unable to query the label..
+				102 = Checksum is not a match, don't trust any information
+			*/
+		
+		if($bitcoin_address != ''){
 			//A Bitcoin address has been set, lets attempt to query all reciept information
 			$bitcoin_label_information = bitcoin_get_address_label($bitcoin_address);
-			
+
 			if($bitcoin_label_information["return_status"] == 1 && $bitcoin_label_information["checksum_match"] == 1){
-				//Label & checksum information was successfully outputted, lets query Bitcoin for some reciept information
+				//Extract receipt information from label function
 				
-			}
+				$output["checksum"]			= $bitcoin_label_information["checksum"];
+				$output["products_in_receipt"]	= $bitcoin_label_information["products_in_receipt"];
+				$output["timestamp_generated"]	= $bitcoin_label_information["timestamp_generated"];
+				$output["amount_due_in_satoshi"]	= $bitcoin_label_information["amount_due_in_satoshi"];
+				
+				//Return status success
+				$output["return_status"]	= 1;
+				
+			}else{
+				//Checksum didn't match output error
+				
+				if($bitcoin_label_information["return_status"] == -1){
+					$output["return_status"] = -1;
+				}else if($bitcoin_label_information["return_status"] == 100){
+					$output["return_status"] = 103;
+				}else if($bitcoin_label_information["return_status"] == 101){
+					$output["return_status"] = 104;
+				}else if($bitcoin_label_information["return_status"] == 102){
+					$output["return_status"] = 101;
+				}
+			}	
 		}else{
 			//No bitcoin address was set
 			$output["return_status"] = 100;
@@ -606,6 +670,9 @@
 **********************************************************************/
 	error_reporting($current_error_reporting);
 /*********************END REVERTING ERROR REPORTING************/
-var_dump(bitcoin_validate_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ'));
-var_dump(bitcoin_get_received_by_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ', 0));
+//var_dump(bitcoin_validate_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ'));
+//var_dump(bitcoin_get_received_by_address('1Dge2nbsnsHPmU1qdgBawNijED6n9WsHsZ', 0));
+//var_dump(bitcoin_generate_receipt(100000000, array(1,2,3,4,5,6)));
+
+var_dump(bitcoin_get_receipt_information('19inU5iumWbtBfd3SM3n9vSUE6BUyh8Rh4'));
 ?>
