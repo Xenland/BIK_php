@@ -1,6 +1,8 @@
 1. Download this library
 2. Extract it into your web development working directory
-3. Edit the "BFWDK_library.php" file to point to your Bitcoin client (It is recommended to use HTTPS connections to prevent your credentails from being viewed when flowing through the internet)
-4. Include the "BFWDK_library.php" file into your php code
-5. Integrate BFWDK into your code (API list below)
+3. Edit the "config.php" file to point to your Bitcoin client (It is recommended to use HTTPS connections to prevent your credentails from being viewed when flowing through the internet)
+4. Include the "BFWDK_library.php" file into your php code.
+5. Integrate BFWDK into your code (API and Wiki found here: https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki)
 6. Run your website and enjoy!
+
+If you like this software don't forget to donate! Official donation address found on github (scroll down):https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-
