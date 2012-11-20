@@ -1,7 +1,7 @@
 Bitcoin Financial Web Development Kit
 =============
 Important Notice: Remember this is considered still in development phase, it is not recommended to use this production yet.
-
+[https://github.com/Xenland/Bitcoin-Financial-Web-Development-Kit--BFWDK-/wiki/API-Call-Index](Click here to see API Call Index page)
 ###Purpose
 Aimed at assisting in cutting down development time to integrate Bitcoins' functionality into your php projects.
 
@@ -47,10 +47,7 @@ If you wish to help contribute, you need to fork this project
 * 5]Integrate BFWDK into your code (API list below)
 * 6]Run your website and enjoy!
 
-Please see the BFWDK Wiki for more API call documentation
-=============
- 
- 
  ###Thank you and respect
  Thanks to Mike Gogulskis' Bitcoin-php project for helping me with this one.
  Also to Satoshi Nakomoto for all the hard work put into Bitcoin
+

@@ -3,7 +3,9 @@
 	Programmer: Shane B. (Xenland)
 	Date: Nov, 9th 2012
 	Purpose: To provide a drop-in library for php programmers that are not educated in the art of financial security and programming methods.
-	Version: 0.0.x
+	Last Updated in Version: 0.0.x
+	Bitcoin Address: 13ow3MfnbksrSxdcmZZvkhtv4mudsnQeLh
+	Website: http://bitcoindevkit.com
 	
 	License (AGPL)
 		"Bitcoin Financial Web Development Kit" (also referred to as "BFWDK") is free software: 
@@ -33,13 +35,37 @@
 	//Define Integrity checks (checksum details)
 	$bfwdk_integrity_check = 'TypeALongRandomStringHere'; //Generate a random string that is atleast 4096 characters long, Random number here:  http://textmechanic.com/Random-String-Generator.html
 	
-	//Include the JSON-RPC PHP script (Used for querying Bitcoind)
-	include("jsonRPCClient.php");
+	
+	/*
+	=================================================
+	Begin loading necessary dependencies to run this script (Probubly don't need to touch this, just make sure you know what your doing)
+	*/
+	
+		//Include configuration file required to connect to Bitcoind
+		include("./config.php");
+		
+		//Include the JSON-RPC PHP script (Used for querying Bitcoind)
+		include("./dependencies/jsonRPCClient.php");
+	
+	
 	
 	
 	/*
 	=================================================
-	Begin Function(s)
+	Begin Defining Runtime variables. (Don't configure these variables unless you absolutly are sure you know what you are doing!!!)
+	*/
+		//Get default error reporting (This will help prevent altering the developers intended error_reporting level, but also provide the error_reporting nessecary at this level of runtime)
+		$current_error_reporting = error_reporting();	
+		
+		//Set error_reporting for this page
+		error_reporting(0);
+	
+	
+	
+	
+	/*
+	=================================================
+	Begin Defining Function(s)
 	*/
 	
 	
@@ -150,12 +176,12 @@
 			$output["return_status"] = -1;
 			$output["address_label"] = '';
 			$output["checksum_match"] = -1; // -1=Unknown; 0=False; 1= Success, Checksum good
-			$output["bid_in_satoshi"] = 0; //Amount due (according to the label and checksum verification)
-			$output["creation_of_reciept_timestamp"] = 0; //Timestamp upon when the customer created the reciept (according to label and checksum verification)
+			$output["amount_due_in_satoshi"] = 0; //Amount due (according to the label and checksum verification)
+			$output["creation_of_receipt_timestamp"] = 0; //Timestamp upon when the customer created the reciept (according to label and checksum verification)
 			
 			/* Return status codes
 				-1 = Failure to generate address
-				1 = Success (Address label successfully retreived)
+				1 = Success (Address label successfully retrieved)
 				
 				100 = Failure to connect to Bitcoin client
 				101 = Bitcoin was successfully connected to, but for unknown reasons we were unable to query the label..
@@ -197,8 +223,8 @@
 						*/
 							$tmp_address_label_split = explode("|", $tmp_address_label);
 						
-							$output["bid_in_satoshi"] = intval($tmp_address_label_split[1]);
-							$output["creation_of_reciept_timestamp"] = intval($tmp_address_label_split[0]);
+							$output["amount_due_in_satoshi"] = intval($tmp_address_label_split[1]);
+							$output["creation_of_receipt_timestamp"] = intval($tmp_address_label_split[0]);
 							
 							/*
 								Check checksum
@@ -243,6 +269,7 @@
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
+			$output["transaction_list"] = null;
 			
 			/* Return status codes
 				-1 = Failure to generate address
@@ -256,8 +283,9 @@
 				
 			//Bitcoin connection open?
 				if($new_btcclient_connection["return_status"] == 1){
-					$new_btcclient_connection["connection"]->listtransactions($account, $count, $from);
+					$output["transaction_list"] = $new_btcclient_connection["connection"]->listtransactions($account, $count, $from);
 					
+					print_r($output["transaction_list"]);
 				}else{
 					//Connection to Bitcoin failed
 					$output["return_status"] = 100;
@@ -271,6 +299,8 @@
 		/*
 			bitcoin_get_received_by_address()
 			Purpose: query Bitcoin and return the total overall acumulated Bitcoins for this account
+			Notes:
+				With out a Bitcoin address this function fails with error at the Bitcoind level so we produce a software error
 		*/
 		function bitcoin_get_received_by_address($bitcoin_address='', $minimum_confirmations=1){
 			global $bfwdk_integrity_check, $bfwdk_settings;
@@ -281,15 +311,17 @@
 			$output["total_received_in_bitcoin"] = 0.00000000; //Decimal/Float (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
 			
 			/* Return status codes
-				-1 = Failure to generate address
+				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
 				1 = Success 
 				
 				100 = Failure to connect to Bitcoin client
 				101 = Failure to retrieve balance
 			*/
 			
+			//if($bitcoin_address
+			
 			//Sanatize incomming parameters
-				$minimum_confirmations = floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
+				$minimum_confirmations = (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
 			
 			//Create a floor limit of zero
 				if($minimum_confirmations <= 0){
@@ -314,6 +346,8 @@
 					}else{
 						//Failure
 						$output["return_status"] = 101;
+						
+						var_dump($tmp_total_received_in_bitcoin);
 					}
 					
 				}else{
@@ -438,16 +472,15 @@
 	}
 
 /*********************************************************************
-	Clear Checksum memory to prevent any scripts out side this one. This is to prevent any attempts to inject checksum data into the labels and hacking confirmed reciepts status or anything of that nature.
+	Clear Checksum memory to prevent any scripts out side this one from tampering with checksums, and to verify label information is true.
 *********************************************************************/
 	$bfwdk_integrity_check = '00000000000000000000000000000000000000000000000000000000';
-//********************* END CLEAR CHECKSUM MEMORY *************/
+/********************* END CLEAR CHECKSUM MEMORY *************/
 
+/*********************************************************************
+	Revert error_reporting back to default before this script executed (To prevent any intended settings to error_reporting to be changed)
+**********************************************************************/
+	error_reporting($current_error_reporting);
+/*********************END REVERTING ERROR REPORTING************/
 
-/*
-	Below is some example codes you can uncomment, run, test and view their output.
-*/
-//var_dump(bitcoin_generate_receipt(100000000));
-//var_dump(bitcoin_get_address_label(''));
-//var_dump(bitcoin_get_received_by_address('', 0));
 ?>
