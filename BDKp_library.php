@@ -41,7 +41,7 @@
 	*/
 		//Set error_reporting for this page
 		error_reporting(0);
-		error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
+		//error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 		
 	
 	
@@ -453,7 +453,7 @@
 			bitcoin_list_transactions()
 			Purpose: query Bitcoin and return all transactions
 		*/
-		function bitcoin_list_transactions($account='', $count=9999999999999, $from=0){
+		function bitcoin_list_transactions($account='*', $count=9999999999999, $from=0){
 			global $bfwdk_integrity_check, $bfwdk_settings;
 			
 			//Define local/private variables
@@ -573,6 +573,15 @@
 			
 			return $output;
 		}
+		
+		
+		
+		/*
+			bitcoin_get_received_by_address()
+			Purpose: query Bitcoin and return the total overall acumulated Bitcoins for this account
+			Notes:
+				With out a Bitcoin address this function fails with error at the Bitcoind level so we produce a software error
+		*/
 		
 		
 		
