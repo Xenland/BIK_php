@@ -14,7 +14,7 @@ Aimed at assisting in cutting down development time to integrate Bitcoins' funct
 * Redundant checking to prevent stochastic situations from slipping past security measures.
 * Simple API commands
 * Does not rely on a database but if a database is used more features are available with out compromising security.
-* Fast, Quick, Effecient
+* Fast, Quick, Efficient
 
 ###PHP Requirements
 * PHP5
