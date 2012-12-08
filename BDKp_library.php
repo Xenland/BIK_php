@@ -4,7 +4,7 @@
 	Date: Nov, 9th 2012
 	Purpose: To provide a drop-in library for php programmers that are not educated in the art of financial security and programming methods.
 	Last Updated in Version: 0.0.x
-	Bitcoin Address: 13ow3MfnbksrSxdcmZZvkhtv4mudsnQeLh
+	Donation Bitcoin Address: 13ow3MfnbksrSxdcmZZvkhtv4mudsnQeLh
 	Website: http://bitcoindevkit.com
 	
 	License (AGPL)
@@ -320,7 +320,7 @@
 			$output["address_label"] Upon success will be the label associated with the inputed Bitcoin address
 		*/
 		function bitcoin_get_address_label($bitcoin_address=''){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"]			= -1;
@@ -378,7 +378,7 @@
 						$unverified_receipt_information["checksum"] = '';
 						
 						//Make runtime hash/checksum
-						$receipt_data_checksum = hash($bfwdk_settings["hash_type"], json_encode($unverified_receipt_information));
+						$receipt_data_checksum = hash($bdk_settings["hash_type"], json_encode($unverified_receipt_information));
 						
 						//Compare runtime hash /checksum with the loaded hash/checksum
 						if($tmp_store_checksum == $receipt_data_checksum){
@@ -433,7 +433,7 @@
 						
 		*/
 		function bitcoin_verify_message($bitcoin_address='', $signature='', $message='', $enable_consistency_filter=1){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
@@ -509,7 +509,7 @@
 			Purpose: query Bitcoin and return all transactions
 		*/
 		function bitcoin_list_transactions($account='*', $count=9999999999999, $from=0){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
@@ -545,7 +545,7 @@
 				With out a Bitcoin address this function fails with error at the Bitcoind level so we produce a software error
 		*/
 		function bitcoin_get_received_by_address($bitcoin_address='', $minimum_confirmations=1){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
@@ -636,7 +636,7 @@
 			Purpose: query Bitcoin and send Bitcoins from an account/address to the specified address
 		*/
 		function bitcoin_sendfrom($bitcoin_address_label='', $send_to_bitcoin_address='', $amount_in_satoshi=00000000, $minimum_confirmations=1){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
@@ -700,7 +700,7 @@
 			Bitcoin API: <fromaccount> {address:amount,...} [minconf=1] [comment] 
 		*/
 		function bitcoin_sendmany($bitcoin_address_label='', $send_to_bitcoin_address = Array(), $minimum_confirmations=1, $comment=''){
-			global $bfwdk_integrity_check, $bfwdk_settings;
+			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
@@ -778,10 +778,106 @@
 				bdk_verify_checksum()
 				Purpose: a simple function to call for verifying a checksum with its inputted contents
 			*/
-			function bdk_verify_checksum(){
-			
+			function bdk_verify_checksum($original_string='', $checksum_string='', $checksum_algo=''){
+				global $bdk_settings;
+				
+				//Define local variables
+				$output = 0;
+				
+				//Clean incomming variable(s)
+				if($checksum_algo == ''){
+					//Set checksum algo to the default (Set in config.php)
+					$checksum_algo = $bdk_settings["hash_type"];
+				}
+				
+				$original_hash = hash($checksum_algo, $original_string);
+				
+				if($checksum_string == $original_hash){
+					$output = 1;
+				}else{
+					$output = 0;
+				}
+				
+				return $output;
 			}
-		
+			
+			/*
+				bdk_generate_random_string()
+				Purpose: Generates a length of random text
+			*/
+			function bdk_generate_random_string($length=4096){
+				global $bdk_settings;
+				
+				
+				//Define local variables
+				$output["return_status"] = -1;
+				$output["random_string"] = '';
+				$output["infinite_loop_fault_detected"] = 0; //This is helpfull for debugging or extra "checK" if the generation function did its job
+				
+				/* 
+					Return status codes
+					-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
+					1 = Success 
+					
+					100 =  Failed to generate the target length
+				*/
+				
+				$characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+				
+				//Begin random generation
+				$continue_generating = 1;
+					
+				/* Prevent Infinite Loops by making sure the value is changing and in the correct direction */
+				$last_length = 0;
+				$last_length_iteration = 0;
+					
+				while($continue_generating == 1){
+					$string = '';
+					for ($i = 0; $i < 1024; $i++) {
+						$string .= $characters[rand(0, strlen($characters) - 1)];
+					}
+					
+					//Hash new random strings until we have more then enough characters
+					$output["random_string"] .= hash($bdk_settings["hash_type"], $string);
+					
+					
+					/* Prevent Infinite loops from ever happening by comparing previous values */
+					if(strlen($output["random_string"]) >= $length){
+						//Tell generator to stop scince we have the target length
+						$continue_generating = 0;
+					}
+					
+					//Check if the length has changed (Only if we should continue generating though)
+					if($continue_generating == 1 && $last_length_iteration >= 2){
+						if($last_length >= strlen($output["random_string"])){
+							//We have detected a possible infinite loop, break the while() statement
+							$continue_generating = 0;
+							
+							$output["infinite_loop_fault_detected"] = 1;
+						}
+					}
+					
+					
+					//Get length and set it as the last length
+					$last_length = strlen($output["random_string"]);
+					
+					//Do iterations....
+					$last_length_iteration++;
+				}
+				
+				//Strip all characters past the target amount...
+				$output["random_string"] = substr($output["random_string"], 0, $length);
+				
+				//Check if this is the target length before returning as success
+				if(strlen($output["random_string"]) == $length){
+					$output["return_status"] = 1;
+					
+				}else{
+					$output["return_status"] = 100;
+				}
+				
+				return $output;
+			}
 
 //--------------------------------------------------------------------------------------------------------------
 //			HIGH LEVEL FUNCTIONS
@@ -789,7 +885,7 @@
 	
 	
 	/*
-			bitcoin_generate_receipt()
+			bdk_generate_receipt()
 			Purpose: Queries Bitcoin for a new address and labels that address with various receipt data to keep track of it.
 			
 			Parameter(s) Explaination
@@ -797,7 +893,7 @@
 			$product_id_array: This has to be an array regardless of key/pair data/value count
 	*/
 	function bdk_generate_receipt($amount_due_in_satoshi = 0, $product_id_array = Array()){
-		global $bfwdk_integrity_check, $bfwdk_settings;
+		global $bdk_integrity_check, $bdk_settings;
 		
 		//Define local/private variables
 			$output["return_status"] = -1;
@@ -834,8 +930,8 @@
 				//Loop through all product ids in $product_id_address and convert them to integers
 					$num_product_ids_in_array = count($product_id_array);
 					
-					//while($a = 0; $a < $num_product_ids_in_array; $a += 1){
-					//$product_id_array[$i] = floor($product_id_array[$i]);
+					//while($a = 0; $a < $num_product_ids_in_array; $a++){
+					//	$product_id_array[$i] = floor($product_id_array[$i]);
 					//}
 
 				//Assign product ids to the $receipt_data array
@@ -845,7 +941,7 @@
 				$receipt_data_json_encoded = json_encode($receipt_data);
 
 				//Generate a checksum (Then amend the encoded json data with the checksum)
-				$receipt_data_checksum = hash($bfwdk_settings["hash_type"], $receipt_data_json_encoded);
+				$receipt_data_checksum = hash($bdk_settings["hash_type"], $receipt_data_json_encoded);
 				
 				//Amend the receipt array to contain the checksum (Then update the json encoded variable)
 				$receipt_data["checksum"] = $receipt_data_checksum;
@@ -884,14 +980,13 @@
 	
 	
 	/*
-			bitcoin_get_receipt_information()
+			bdk_get_receipt_information()
 			Purpose: Queries a Bitcoin address, collects as much data as it can, then outputs what it knows
 			
 			Parameter(s) Explaination
-			No parmeter(s) just yet
 	*/
 	function bdk_get_receipt_information($bitcoin_address=''){
-		global $bfwdk_integrity_check, $bfwdk_settings;
+		global $bdk_integrity_check, $bdk_settings;
 		
 		//Define local/private variables
 			$output["return_status"]			= -1;
@@ -945,11 +1040,133 @@
 			
 		return $output;
 	}
+	
+	
+	/*
+			bdk_login_with_coin_address()
+			Purpose: 
+			
+			Notes: Please note that this function is only secure depending on how many bits of entropy your $bdk_integrity_check variable including string length should be atleast 4096.
+			
+			Parameter(s) Explaination
+			$bitcoin_address: This is the address the visitor/user is requesting to verify their identity with.
+			$step: This is the step the user is one, step 1 will generate a random string to "sign" with the Bitcoin.org Client (Satoshi Client)
+			$step_2_signature: This is the signature the visitor/user provides
+			$step_2_original_data: This is data the server provided (required to do a comparison with out a database)
+	*/
+	function bdk_login_with_coin_address($bitcoin_address='', $step=1, $step_2_signature='', $step_2_original_data=''){
+		global $bdk_integrity_check, $bdk_settings;
+		
+		//Define local/private variables
+		$output["return_status"]	= -1;
+		$output["bitcoin_address_authenticated"] = 0;
+		$output["string_to_sign"] = '';
+		
+		/* Return status codes
+			-1 = Failure to collect information on the receipt
+			1 = Success
+			
+			100 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
+			101 = Creation of random string failed.
+			102 = Inputted server checksum dosen't match the local server check sum. Tell user to try again we can't trust this information if the server checksum dosen't match the data.
+			103 = The signature may be valid but this token is expired, tell the user to try again, and get a new token to sign.
+		*/
+		if($bitcoin_address != ''){
+			//Check if this Bitcoin address is valid before expending the resources to generate a random string/checking, etc
+			$bitcoin_validation_status = bitcoin_validate_address($bitcoin_address);
+			
+			if($bitcoin_validation_status["return_status"] == 1 && $bitcoin_validation_status["isvalid"] == 1){
+				//This Bitcoin address is valid, what did we want to do now that we know this?
+				if($step == 1){
+					//Generate a random string for the non-authenticated user to sign and send back to us
+					$random_string_request = bdk_generate_random_string(256);
+					
+					if($random_string_request["return_status"] == 1){
+						//Random string created!
+						$random_string = $random_string_request["random_string"];
+						
+						//Sync time
+						$current_time_sync = time(); //We set in a variable so all time references are the same during code-execution.
+						
+						//Server Checksum
+						$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $current_time_sync.$random_string.$bdk_integrity_check.$bitcoin_address)));
+						
+						//String to sign
+						$string_to_sign = bdk_encode_message($current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address);
+						
+						//Return string to sign
+						$output["string_to_sign"] = $string_to_sign;
+						
+					}else{
+						//Creation of random string failed.
+						$output["return_status"] = 101;
+					}
+					
+				}else if($step == 2){
+					//Validate information
+					
+					//First decode the incomming $step_2_original_data
+					$step_2_decoded_data = bdk_decode_message($step_2_original_data);
+					
+					//Second split decoded data so we can do some integrity checks
+					$step_2_decoded_data_split = explode("|", $step_2_decoded_data);
+					
+					/*
+					step_2_decoded_data_split Table
+					
+					[0] = Time stamp
+					[1] = Server Checksum
+					[2] = Random String
+					[3] = Bitcoin Address attempting to authenticate
+					*/
+					
+					//Create a serverside checksum based on the provided information
+					$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $step_2_decoded_data_split[0].$step_2_decoded_data_split[2].$bdk_integrity_check.$step_2_decoded_data_split[3])));
+				
+					//See if the server checksum matches with the
+					if($server_checksum == $step_2_decoded_data_split[1]){
+						//So far soo good the data is intact, now we must verify that the Bitcoin signature is valid with the data
+						
+						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $step_2_decoded_data);
+						
+						if($valid_message_status["return_status"] == 1){
+							//A valid message! But is this token expired?
+							if((time() - $step_2_decoded_data_split[0]) <= $bdk_settings["coin_authentication_timeout"]){
+								//Consider the user authenticated!
+								$output["return_status"] = 1;
+								$output["bitcoin_address_authenticated"] = 1;
+							}else{
+								//Token has expired, the user must generate another one.
+								$output["return_status"] = 103;
+							}
+							
+						}else{
+							//Not a valid message
+							$output["return_status"] = 101;
+						}
+						
+					}else{
+						//The provided server checksum dosen't match the servers checksum
+						$output["return_status"] = 102;
+					}
+				}
+				
+			}else{
+				//This Bitcoin address isn't valid
+				$output["return_status"] = 100;
+			}
+			
+		}else{
+			$output["return_status"] = 100;
+		}
+		
+		return $output;
+	}
 
 /*********************************************************************
 	Clear Checksum memory to prevent any scripts out side this one from tampering with checksums. (this memory clearing dosen't prevent scripts from opening up the config in a text file and reading the checksum)
 *********************************************************************/
-	$bfwdk_integrity_check = '00000000000000000000000000000000000000000000000000000000';
+	$bdk_integrity_check = '00000000000000000000000000000000000000000000000000000000';
 /********************* END CLEAR CHECKSUM MEMORY *************/
 
 //var_dump(bitcoin_validate_address(''));
@@ -959,4 +1176,8 @@
 //var_dump(bitcoin_verify_message('187bBf3jDhE4FMkYYciZoHhgPS1gQQ7YYN', 'G/AY7zAE5s6O5kF/CEXAGEdnZpewplMsHXBmacyF42hzvsOmEPajIUVzS4U4SJXPw6qGzGrKTtuGqIgYiffsqT4=', 'helloworld'));
 //var_dump(bitcoin_set_tx_fee(00000500));
 //var_dump(bitcoin_sendfrom('Bitcoin Mall (Vault Address 2)', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', 1));
+//var_dump(bdk_generate_random_string(4096));
+//var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 1));
+//var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 2, 'H1toEU8fhdT5SrMWTKpsRi/2/S93o+zRfUAyfmVS7ew6PoOepO0VOCX5+XZJSo81LX7+I8VixTWjhAskqnCYeVM=', 'MTM1NDk5ODQxMHwyYzYzNTVmZWQxYzdmM2NjOGQyNTFiZDc4N2VlNWIzZDZkZGE2YmE1NjdmOTg3MDU0MWI0ODQ2OGIyN2QxYWIxfDU1NjUwMDM5MDgwYzdmY2Y2ZjJmNjlmZWJlMjM4YmIwODY4MTVkMGIxNmUyMmQyYjllZGI0OGZiOWFiZDIxOWYwZWFkNWQ0ZWMxYzBkZmRlODU5ZTk2ZmM5NGZmZDQ4NzkzOTJlYWMzNTI5ZGQwMzU1ZTQzNjI5YTA0MTBhNWY3YTljYmE0Y2QwY2Y3YTBhZjlkNjI4MzNiODk5YWM1NGNkZTZkMmI5ZmZiNWYxZTJiM2NiYzYxYzgxMmYyYTU5YWE5OTg5MTE3MWYyNTEzYmY0YWZjMzcyYzE2YTVkNzU5NjYxZDRkNGMyYTg5ZGI4NzcyNWQwZjU5ODVmMTQyMmZ8MU5hRUF6bzFTU3ppbmFTb2RCaWN4QTZ1Z2QzZWREelg3ZA'));
+//var_dump(bdk_decode_message('MTM1NDk5ODE3N3xmMzVjYmZhYjVkOGM4ODYwYWQ0NzBkZDllZWNiN2JlNWQzMjJhMWUxNjM3NTI1NzI5ZWRlN2JkM2UxN2EwNTkyfDRmNzhiNzA1ZjU2MjdkZWYxOTEzNWE0MDNkOWMyZWYxMmFlODcwNGNiODU0MWJkNTQ3Y2Q1M2EzMGZlOTdmMzYwNGU3NDA4NTE5ODU2NTUwMTNkNTFlZDMzOTY4ZjQ1N2NlYzRmZTFmOThlYjJmNmUwOWY0NzEwZDVmYjRhYzIxMDkyYzJlMzU2ZWQ0OTFkZWQxYjFiMDhmZjEyNGRlNTI5NDFlYmUyNjBiNzIwZmY1MmNkYjAxNjRiZWFmYmI5ZjEzN2NkMjZjZWZmNzEzNjY0ZjlmNDg1MGQwY2JjMDQ1YzViNWRiMTcyM2IzMDZjZDMwZDQ5ZGQ0OWM3ZjA4MmE'));
 ?>
