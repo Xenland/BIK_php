@@ -41,7 +41,7 @@
 	*/
 		//Set error_reporting for this page
 		error_reporting(0);
-		error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
+		//error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 		
 	
 	
@@ -693,6 +693,65 @@
 		}
 		
 		
+		/*
+			bitcoin_sendmany()
+			Purpose: query Bitcoin and send Bitcoins to many Bitcoins addresses...
+			
+			Bitcoin API: <fromaccount> {address:amount,...} [minconf=1] [comment] 
+		*/
+		function bitcoin_sendmany($bitcoin_address_label='', $send_to_bitcoin_address = Array(), $minimum_confirmations=1, $comment=''){
+			global $bfwdk_integrity_check, $bfwdk_settings;
+			
+			//Define local/private variables
+			$output["return_status"] = -1;
+			
+			$output["error_rpc_message"] = '';
+
+			/* 
+				Return status codes
+				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
+				1 = Success 
+				
+				100 =  Bitcoin connection failed
+				101 = Command failed
+			*/
+			
+			//Open Bitcoin connection
+				$new_btcclient_connection = bitcoin_open_connection();
+				
+			//Bitcoin connection open?
+				if($new_btcclient_connection["return_status"] == 1){
+					//Opened a connection to Bitcoin
+					$tmp_verifymessage_status = '';
+					$tmp_command_success = 0;
+					
+					try{
+						$tmp_verifymessage_status = $new_btcclient_connection["connection"]->sendmany($bitcoin_address_label, $send_to_bitcoin_address, $minimum_confirmations, $comment);
+						$tmp_command_success = 1;
+					}catch(Exception $e){
+						$tmp_command_success = 0;
+					}
+					
+					
+					if($tmp_command_success == 1){
+						//Success
+						$output["return_status"] = 1;
+					}else{
+						//Failure to execute command
+						$output["return_status"] = 101;
+						$output["error_rpc_message"] = $tmp_verifymessage_status;
+					}
+					
+				}else{
+					$output["return_status"] = 100;
+				}
+				
+			return $output;
+		}
+		
+		
+		
+					
 		
 		/*
 		^^^^^^^^^^^ ULTRA-LOW-LEVEL-FUNCTIONS ^^^^^^^^^^^
@@ -898,6 +957,6 @@
 //var_dump(bdk_generate_receipt(100000000, array(1,2,3,4,5,6)));
 //var_dump(bdk_get_receipt_information('12V3vgwzHYFUAyPC2eyCAaKqimbfXY7wU1'));
 //var_dump(bitcoin_verify_message('187bBf3jDhE4FMkYYciZoHhgPS1gQQ7YYN', 'G/AY7zAE5s6O5kF/CEXAGEdnZpewplMsHXBmacyF42hzvsOmEPajIUVzS4U4SJXPw6qGzGrKTtuGqIgYiffsqT4=', 'helloworld'));
-var_dump(bitcoin_set_tx_fee(00000500));
-var_dump(bitcoin_sendfrom('Bitcoin Mall (Vault Address 2)', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', 1));
+//var_dump(bitcoin_set_tx_fee(00000500));
+//var_dump(bitcoin_sendfrom('Bitcoin Mall (Vault Address 2)', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', 1));
 ?>
