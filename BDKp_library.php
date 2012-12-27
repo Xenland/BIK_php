@@ -768,9 +768,25 @@
 					"fee" 
 		*/
 		function bitcoin_get_transaction($tx_id=''){
+			global $bdk_integrity_check, $bdk_settings;
+		
 			//Define local/private variables
 			$output["return_status"] = -1;
-
+			$output["tx_info"]["amount"] = (double) 0.00000000;
+			$output["tx_info"]["fee"] = (double) 0.00000000;
+			$output["tx_info"]["confirmations"] = (int) 0;
+			$output["tx_info"]["blockhash"] = (string) '';
+			$output["tx_info"]["blockindex"] = (int) 0;
+			$output["tx_info"]["blocktime"] = (int) 0;
+			$output["tx_info"]["txid"] = (string) '';
+			$output["tx_info"]["time"] = (int) 0;
+			$output["tx_info"]["timereceived"] = (int) 0;
+			
+			$output["tx_info"]["details"]["account"] = (string) '';
+			$output["tx_info"]["details"]["address"] = (string) '';
+			$output["tx_info"]["details"]["category"] = (string) '';
+			$output["tx_info"]["details"]["amount"] = (double) 0.00000000;
+			$output["tx_info"]["details"]["fee"] = (double) 0.00000000;
 
 			/* 
 				Return status codes
@@ -778,7 +794,7 @@
 				1 = Success 
 				
 				100 =  Bitcoin connection failed
-				
+				101 = 
 			*/
 			
 			//Open Bitcoin connection
@@ -786,10 +802,48 @@
 				
 			//Bitcoin Connection Open
 			if($new_btcclient_connection["return_status"] == 1){
-				
+				//Opened a connection to Bitcoin
+					$tmp_tx_info = '';
+					$tmp_command_success = 0;
+					
+					try{
+						$tmp_tx_info = $new_btcclient_connection["connection"]->gettransaction($tx_id);
+						$tmp_command_success = 1;
+					}catch(Exception $e){
+						$tmp_command_success = 0;
+					}
+					
+					if($tmp_command_success == 1){
+						//Success
+						$output["return_status"] = 1;
+						
+						//Set variables
+						$output["tx_info"]["amount"] = (double) $tmp_tx_info["amount"];
+						$output["tx_info"]["fee"] = (double) $tmp_tx_info["fee"];
+						$output["tx_info"]["confirmations"] = (int) $tmp_tx_info["confirmations"];
+						$output["tx_info"]["blockhash"] = (string) $tmp_tx_info["blockhash"];
+						$output["tx_info"]["blockindex"] = (int) $tmp_tx_info["blockindex"];
+						$output["tx_info"]["blocktime"] = (int) $tmp_tx_info["blocktime"];
+						$output["tx_info"]["txid"] = (string) $tmp_tx_info["txid"];
+						$output["tx_info"]["time"] = (int) $tmp_tx_info["time"];
+						$output["tx_info"]["timereceived"] = (int) $tmp_tx_info["timereceived"];
+						
+
+						$output["tx_info"]["details"]["account"] = (string) $tmp_tx_info["details"][0]["account"];
+						$output["tx_info"]["details"]["address"] = (string) $tmp_tx_info["details"][0]["address"];
+						$output["tx_info"]["details"]["category"] = (string) $tmp_tx_info["details"][0]["category"];
+						$output["tx_info"]["details"]["amount"] = (double) $tmp_tx_info["details"][0]["amount"];
+						$output["tx_info"]["details"]["fee"] = (double) $tmp_tx_info["details"][0]["fee"];
+						
+					}else{
+						//Failure to execute command
+						$output["return_status"] = 101;
+					}
 			}else{
-			
+				$output["return_status"] = 100;
 			}
+			
+			return $output;
 		}
 		
 		
@@ -1226,5 +1280,5 @@
 //var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 1));
 //var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 2, 'H1toEU8fhdT5SrMWTKpsRi/2/S93o+zRfUAyfmVS7ew6PoOepO0VOCX5+XZJSo81LX7+I8VixTWjhAskqnCYeVM=', 'MTM1NDk5ODQxMHwyYzYzNTVmZWQxYzdmM2NjOGQyNTFiZDc4N2VlNWIzZDZkZGE2YmE1NjdmOTg3MDU0MWI0ODQ2OGIyN2QxYWIxfDU1NjUwMDM5MDgwYzdmY2Y2ZjJmNjlmZWJlMjM4YmIwODY4MTVkMGIxNmUyMmQyYjllZGI0OGZiOWFiZDIxOWYwZWFkNWQ0ZWMxYzBkZmRlODU5ZTk2ZmM5NGZmZDQ4NzkzOTJlYWMzNTI5ZGQwMzU1ZTQzNjI5YTA0MTBhNWY3YTljYmE0Y2QwY2Y3YTBhZjlkNjI4MzNiODk5YWM1NGNkZTZkMmI5ZmZiNWYxZTJiM2NiYzYxYzgxMmYyYTU5YWE5OTg5MTE3MWYyNTEzYmY0YWZjMzcyYzE2YTVkNzU5NjYxZDRkNGMyYTg5ZGI4NzcyNWQwZjU5ODVmMTQyMmZ8MU5hRUF6bzFTU3ppbmFTb2RCaWN4QTZ1Z2QzZWREelg3ZA'));
 //var_dump(bdk_decode_message('MTM1NDk5ODE3N3xmMzVjYmZhYjVkOGM4ODYwYWQ0NzBkZDllZWNiN2JlNWQzMjJhMWUxNjM3NTI1NzI5ZWRlN2JkM2UxN2EwNTkyfDRmNzhiNzA1ZjU2MjdkZWYxOTEzNWE0MDNkOWMyZWYxMmFlODcwNGNiODU0MWJkNTQ3Y2Q1M2EzMGZlOTdmMzYwNGU3NDA4NTE5ODU2NTUwMTNkNTFlZDMzOTY4ZjQ1N2NlYzRmZTFmOThlYjJmNmUwOWY0NzEwZDVmYjRhYzIxMDkyYzJlMzU2ZWQ0OTFkZWQxYjFiMDhmZjEyNGRlNTI5NDFlYmUyNjBiNzIwZmY1MmNkYjAxNjRiZWFmYmI5ZjEzN2NkMjZjZWZmNzEzNjY0ZjlmNDg1MGQwY2JjMDQ1YzViNWRiMTcyM2IzMDZjZDMwZDQ5ZGQ0OWM3ZjA4MmE'));
-var_dump(bitcoin_get_transaction('6eadf70eec963bf1baea1262e3103a0ac10d8b12edbe15e41830a13842d71e35'));
+//var_dump(bitcoin_get_transaction('tx_id_here'));
 ?>
