@@ -751,6 +751,50 @@
 		
 		
 		
+		/*
+			bitcoin_get_transaction()
+			Purpose: query Bitcoin and get information about the requested transaction.
+			
+			Bitcoin API: gettransaction <txid>
+				"amount" : total amount of the transaction
+				"confirmations" : number of confirmations of the transaction
+				"txid" : the transaction ID
+				"time" : time the transaction occurred
+				"details" - An array of objects containing:
+					"account"
+					"address"
+					"category"
+					"amount"
+					"fee" 
+		*/
+		function bitcoin_get_transaction($tx_id=''){
+			//Define local/private variables
+			$output["return_status"] = -1;
+
+
+			/* 
+				Return status codes
+				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
+				1 = Success 
+				
+				100 =  Bitcoin connection failed
+				
+			*/
+			
+			//Open Bitcoin connection
+				$new_btcclient_connection = bitcoin_open_connection();
+				
+			//Bitcoin Connection Open
+			if($new_btcclient_connection["return_status"] == 1){
+				
+			}else{
+			
+			}
+		}
+		
+		
+		
+		
 					
 		
 		/*
@@ -1182,4 +1226,5 @@
 //var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 1));
 //var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 2, 'H1toEU8fhdT5SrMWTKpsRi/2/S93o+zRfUAyfmVS7ew6PoOepO0VOCX5+XZJSo81LX7+I8VixTWjhAskqnCYeVM=', 'MTM1NDk5ODQxMHwyYzYzNTVmZWQxYzdmM2NjOGQyNTFiZDc4N2VlNWIzZDZkZGE2YmE1NjdmOTg3MDU0MWI0ODQ2OGIyN2QxYWIxfDU1NjUwMDM5MDgwYzdmY2Y2ZjJmNjlmZWJlMjM4YmIwODY4MTVkMGIxNmUyMmQyYjllZGI0OGZiOWFiZDIxOWYwZWFkNWQ0ZWMxYzBkZmRlODU5ZTk2ZmM5NGZmZDQ4NzkzOTJlYWMzNTI5ZGQwMzU1ZTQzNjI5YTA0MTBhNWY3YTljYmE0Y2QwY2Y3YTBhZjlkNjI4MzNiODk5YWM1NGNkZTZkMmI5ZmZiNWYxZTJiM2NiYzYxYzgxMmYyYTU5YWE5OTg5MTE3MWYyNTEzYmY0YWZjMzcyYzE2YTVkNzU5NjYxZDRkNGMyYTg5ZGI4NzcyNWQwZjU5ODVmMTQyMmZ8MU5hRUF6bzFTU3ppbmFTb2RCaWN4QTZ1Z2QzZWREelg3ZA'));
 //var_dump(bdk_decode_message('MTM1NDk5ODE3N3xmMzVjYmZhYjVkOGM4ODYwYWQ0NzBkZDllZWNiN2JlNWQzMjJhMWUxNjM3NTI1NzI5ZWRlN2JkM2UxN2EwNTkyfDRmNzhiNzA1ZjU2MjdkZWYxOTEzNWE0MDNkOWMyZWYxMmFlODcwNGNiODU0MWJkNTQ3Y2Q1M2EzMGZlOTdmMzYwNGU3NDA4NTE5ODU2NTUwMTNkNTFlZDMzOTY4ZjQ1N2NlYzRmZTFmOThlYjJmNmUwOWY0NzEwZDVmYjRhYzIxMDkyYzJlMzU2ZWQ0OTFkZWQxYjFiMDhmZjEyNGRlNTI5NDFlYmUyNjBiNzIwZmY1MmNkYjAxNjRiZWFmYmI5ZjEzN2NkMjZjZWZmNzEzNjY0ZjlmNDg1MGQwY2JjMDQ1YzViNWRiMTcyM2IzMDZjZDMwZDQ5ZGQ0OWM3ZjA4MmE'));
+var_dump(bitcoin_get_transaction('6eadf70eec963bf1baea1262e3103a0ac10d8b12edbe15e41830a13842d71e35'));
 ?>
