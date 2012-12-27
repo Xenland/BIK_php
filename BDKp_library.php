@@ -1097,6 +1097,8 @@
 						//Return string to sign
 						$output["string_to_sign"] = $string_to_sign;
 						
+						$output["return_status"] = 1;
+						
 					}else{
 						//Creation of random string failed.
 						$output["return_status"] = 101;
