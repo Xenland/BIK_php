@@ -71,7 +71,7 @@
 				if($btcclient["host"] != '' && $btcclient["user"] != '' && $btcclient["pass"] != '' && $btcclient["https"] != '' && $btcclient["port"] > 0){
 					//Open connection
 					try{
-						$output["connection"] = new jsonRPCClient($btcclient["https"].'://'.$btcclient["user"].':'.$btcclient["pass"].'@'.$btcclient["host"].':'.$btcclient["port"].'/');
+						$output["connection"] = new jsonRPCClient($btcclient["https"].'://'.$btcclient["user"].':'.$btcclient["pass"].'@'.$btcclient["host"].':'.$btcclient["port"]);
 					}catch(Exception $e){
 						$output["return_status"] = -1;
 						$output["connection"] = null;
@@ -229,7 +229,7 @@
 				
 				//Open Bitcoin connection
 					$new_btcclient_connection = bitcoin_open_connection();
-					
+
 				//Bitcoin connection open?
 					if($new_btcclient_connection["return_status"] == 1){
 						//Yes BTC client has been successfully opened
@@ -242,7 +242,6 @@
 							}catch(Exception $e){
 								$tmp_command_executed = 0;
 							}
-							
 							
 							if($tmp_command_executed == 1){
 								$output["return_status"] = 1;
@@ -772,6 +771,7 @@
 		
 			//Define local/private variables
 			$output["return_status"] = -1;
+			
 			$output["tx_info"]["amount"] = (double) 0.00000000;
 			$output["tx_info"]["fee"] = (double) 0.00000000;
 			$output["tx_info"]["confirmations"] = (int) 0;
@@ -1164,15 +1164,16 @@
 			-1 = Failure to collect information on the receipt
 			1 = Success
 			
-			100 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
+			100 = Connection to Bitcoin failed
 			101 = Creation of random string failed.
 			102 = Inputted server checksum dosen't match the local server check sum. Tell user to try again we can't trust this information if the server checksum dosen't match the data.
 			103 = The signature may be valid but this token is expired, tell the user to try again, and get a new token to sign.
+			104 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
 		*/
 		if($bitcoin_address != ''){
 			//Check if this Bitcoin address is valid before expending the resources to generate a random string/checking, etc
 			$bitcoin_validation_status = bitcoin_validate_address($bitcoin_address);
-			
+	
 			if($bitcoin_validation_status["return_status"] == 1 && $bitcoin_validation_status["isvalid"] == 1){
 				//This Bitcoin address is valid, what did we want to do now that we know this?
 				if($step == 1){
@@ -1253,11 +1254,11 @@
 				
 			}else{
 				//This Bitcoin address isn't valid
-				$output["return_status"] = 100;
+				$output["return_status"] = 104;
 			}
 			
 		}else{
-			$output["return_status"] = 100;
+			$output["return_status"] = 105;
 		}
 		
 		return $output;
@@ -1269,16 +1270,4 @@
 	$bdk_integrity_check = '00000000000000000000000000000000000000000000000000000000';
 /********************* END CLEAR CHECKSUM MEMORY *************/
 
-//var_dump(bitcoin_validate_address(''));
-//var_dump(bitcoin_get_received_by_address('', 0));
-//var_dump(bdk_generate_receipt(100000000, array(1,2,3,4,5,6)));
-//var_dump(bdk_get_receipt_information('12V3vgwzHYFUAyPC2eyCAaKqimbfXY7wU1'));
-//var_dump(bitcoin_verify_message('187bBf3jDhE4FMkYYciZoHhgPS1gQQ7YYN', 'G/AY7zAE5s6O5kF/CEXAGEdnZpewplMsHXBmacyF42hzvsOmEPajIUVzS4U4SJXPw6qGzGrKTtuGqIgYiffsqT4=', 'helloworld'));
-//var_dump(bitcoin_set_tx_fee(00000500));
-//var_dump(bitcoin_sendfrom('Bitcoin Mall (Vault Address 2)', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', '15TraoPG7GFq6omJ7THJ3Zfyxz56uzzD2D', 1));
-//var_dump(bdk_generate_random_string(4096));
-//var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 1));
-//var_dump(bdk_login_with_coin_address('1NaEAzo1SSzinaSodBicxA6ugd3edDzX7d', 2, 'H1toEU8fhdT5SrMWTKpsRi/2/S93o+zRfUAyfmVS7ew6PoOepO0VOCX5+XZJSo81LX7+I8VixTWjhAskqnCYeVM=', 'MTM1NDk5ODQxMHwyYzYzNTVmZWQxYzdmM2NjOGQyNTFiZDc4N2VlNWIzZDZkZGE2YmE1NjdmOTg3MDU0MWI0ODQ2OGIyN2QxYWIxfDU1NjUwMDM5MDgwYzdmY2Y2ZjJmNjlmZWJlMjM4YmIwODY4MTVkMGIxNmUyMmQyYjllZGI0OGZiOWFiZDIxOWYwZWFkNWQ0ZWMxYzBkZmRlODU5ZTk2ZmM5NGZmZDQ4NzkzOTJlYWMzNTI5ZGQwMzU1ZTQzNjI5YTA0MTBhNWY3YTljYmE0Y2QwY2Y3YTBhZjlkNjI4MzNiODk5YWM1NGNkZTZkMmI5ZmZiNWYxZTJiM2NiYzYxYzgxMmYyYTU5YWE5OTg5MTE3MWYyNTEzYmY0YWZjMzcyYzE2YTVkNzU5NjYxZDRkNGMyYTg5ZGI4NzcyNWQwZjU5ODVmMTQyMmZ8MU5hRUF6bzFTU3ppbmFTb2RCaWN4QTZ1Z2QzZWREelg3ZA'));
-//var_dump(bdk_decode_message('MTM1NDk5ODE3N3xmMzVjYmZhYjVkOGM4ODYwYWQ0NzBkZDllZWNiN2JlNWQzMjJhMWUxNjM3NTI1NzI5ZWRlN2JkM2UxN2EwNTkyfDRmNzhiNzA1ZjU2MjdkZWYxOTEzNWE0MDNkOWMyZWYxMmFlODcwNGNiODU0MWJkNTQ3Y2Q1M2EzMGZlOTdmMzYwNGU3NDA4NTE5ODU2NTUwMTNkNTFlZDMzOTY4ZjQ1N2NlYzRmZTFmOThlYjJmNmUwOWY0NzEwZDVmYjRhYzIxMDkyYzJlMzU2ZWQ0OTFkZWQxYjFiMDhmZjEyNGRlNTI5NDFlYmUyNjBiNzIwZmY1MmNkYjAxNjRiZWFmYmI5ZjEzN2NkMjZjZWZmNzEzNjY0ZjlmNDg1MGQwY2JjMDQ1YzViNWRiMTcyM2IzMDZjZDMwZDQ5ZGQ0OWM3ZjA4MmE'));
-//var_dump(bitcoin_get_transaction('tx_id_here'));
 ?>
