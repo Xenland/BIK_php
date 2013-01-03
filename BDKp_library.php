@@ -969,7 +969,6 @@
 				//Check if this is the target length before returning as success
 				if(strlen($output["random_string"]) == $length){
 					$output["return_status"] = 1;
-					
 				}else{
 					$output["return_status"] = 100;
 				}
@@ -1169,6 +1168,8 @@
 			102 = Inputted server checksum dosen't match the local server check sum. Tell user to try again we can't trust this information if the server checksum dosen't match the data.
 			103 = The signature may be valid but this token is expired, tell the user to try again, and get a new token to sign.
 			104 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
+			105 = (Same as 104 only different for debugging purposes)  Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
+			106 = message did not validate, signature should not be trusted
 		*/
 		if($bitcoin_address != ''){
 			//Check if this Bitcoin address is valid before expending the resources to generate a random string/checking, etc
@@ -1179,7 +1180,7 @@
 				if($step == 1){
 					//Generate a random string for the non-authenticated user to sign and send back to us
 					$random_string_request = bdk_generate_random_string(256);
-					
+
 					if($random_string_request["return_status"] == 1){
 						//Random string created!
 						$random_string = $random_string_request["random_string"];
@@ -1243,7 +1244,7 @@
 							
 						}else{
 							//Not a valid message
-							$output["return_status"] = 101;
+							$output["return_status"] = 106;
 						}
 						
 					}else{
