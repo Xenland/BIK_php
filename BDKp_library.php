@@ -27,10 +27,10 @@
 	*/
 	
 		//Include configuration file required to connect to Bitcoind
-		include("./config.php");
+		include("config.php");
 		
 		//Include the JSON-RPC PHP script (Used for querying Bitcoind)
-		include("./dependencies/jsonRPCClient.php");
+		include("dependencies/jsonRPCClient.php");
 	
 	
 	
@@ -1192,7 +1192,7 @@
 						$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $current_time_sync.$random_string.$bdk_integrity_check.$bitcoin_address)));
 						
 						//String to sign
-						$string_to_sign = bdk_encode_message($current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address);
+						$string_to_sign = bdk_encode_message("|".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address);
 						
 						//Return string to sign
 						$output["string_to_sign"] = $string_to_sign;
@@ -1215,25 +1215,25 @@
 					
 					/*
 					step_2_decoded_data_split Table
-					
-					[0] = Time stamp
-					[1] = Server Checksum
-					[2] = Random String
-					[3] = Bitcoin Address attempting to authenticate
+					[0] = original message
+					[1] = Time stamp
+					[2] = Server Checksum
+					[3] = Random String
+					[4] = Bitcoin Address attempting to authenticate
 					*/
 					
 					//Create a serverside checksum based on the provided information
-					$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $step_2_decoded_data_split[0].$step_2_decoded_data_split[2].$bdk_integrity_check.$step_2_decoded_data_split[3])));
-				
+					$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $step_2_decoded_data_split[1].$step_2_decoded_data_split[3].$bdk_integrity_check.$step_2_decoded_data_split[4])));
+
 					//See if the server checksum matches with the
-					if($server_checksum == $step_2_decoded_data_split[1]){
+					if($server_checksum == $step_2_decoded_data_split[2]){
 						//So far soo good the data is intact, now we must verify that the Bitcoin signature is valid with the data
 						
 						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $step_2_decoded_data);
 						
 						if($valid_message_status["return_status"] == 1){
 							//A valid message! But is this token expired?
-							if((time() - $step_2_decoded_data_split[0]) <= $bdk_settings["coin_authentication_timeout"]){
+							if((time() - $step_2_decoded_data_split[1]) <= $bdk_settings["coin_authentication_timeout"]){
 								//Consider the user authenticated!
 								$output["return_status"] = 1;
 								$output["bitcoin_address_authenticated"] = 1;
