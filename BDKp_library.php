@@ -1169,7 +1169,7 @@
 			100 = Connection to Bitcoin failed
 			101 = Creation of random string failed.
 			102 = Inputted server checksum dosen't match the local server check sum. Tell user to try again we can't trust this information if the server checksum dosen't match the data.
-			103 = The signature may be valid but this token is expired, tell the user to try again, and get a new token to sign.
+			103 = null
 			104 = Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
 			105 = (Same as 104 only different for debugging purposes)  Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
 			106 = message did not validate, signature should not be trusted
@@ -1236,8 +1236,8 @@
 						//So far soo good the data is intact, now we must verify that the Bitcoin signature is valid with the data
 						
 						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $step_2_decoded_data);
-
-						if($valid_message_status["return_status"] == 1){
+					
+						if($valid_message_status["return_status"] == 1 && $valid_message_status["message_valid"] == 1){
 							//A valid message! But is this token expired?
 							if((time() - $step_2_decoded_data_split[1]) <= $bdk_settings["coin_authentication_timeout"]){
 								//Consider the user authenticated!
@@ -1245,7 +1245,8 @@
 								$output["bitcoin_address_authenticated"] = 1;
 							}else{
 								//Token has expired, the user must generate another one.
-								$output["return_status"] = 103;
+								$output["return_status"] = 1;
+								$output["bitcoin_address_authenticated"] = 0;
 							}
 							
 						}else{
