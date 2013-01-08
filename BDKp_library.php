@@ -39,8 +39,8 @@
 	Begin Defining Runtime variables. (Don't configure these variables unless you absolutly are sure you know what you are doing!!!)
 	*/
 		//Set error_reporting for this page
-		//error_reporting(0);
-		error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
+		error_reporting(0);
+		//error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 		
 	
 	
@@ -1139,10 +1139,14 @@
 	
 	
 	/*
-			bdk_login_with_coin_address()
+			bdk_prove_coin_ownership()
 			Purpose: 
 			
+			PHP.INI NOTE: It seems that if you require to transport your message to sign through get urls you need to set (suhosin.get.max_value_length = 10000) or more;
+						other wise use POST or a database and an unique id system to relook up the message.
+			
 			Notes: Please note that this function is only secure depending on how many bits of entropy your $bdk_integrity_check variable including string length should be atleast 4096.
+					^^^ That only matters if you are relying on the message to be intact as it was when it once left the server and you don't have a DB to check/verify message integrity.
 			
 			Parameter(s) Explaination
 			$bitcoin_address: This is the address the visitor/user is requesting to verify their identity with.
@@ -1150,7 +1154,7 @@
 			$step_2_signature: This is the signature the visitor/user provides
 			$step_2_original_data: This is data the server provided (required to do a comparison with out a database)
 	*/
-	function bdk_login_with_coin_address($bitcoin_address='', $step=1, $step_2_signature='', $step_2_original_data=''){
+	function bdk_prove_coin_ownership($bitcoin_address='', $step=1, $step_2_signature='', $step_2_original_data='', $message_to_sign=''){
 		global $bdk_integrity_check, $bdk_settings;
 		
 		//Define local/private variables
@@ -1191,8 +1195,14 @@
 						$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $current_time_sync.$random_string.$bdk_integrity_check.$bitcoin_address)));
 						
 						//String to sign
-						$string_to_sign = bdk_encode_message("The following is to prove ownership of the address of '".$bitcoin_address."' and in no way, shape or form is it a legal binding contract. |".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address);
-						
+							if($message_to_sign == ''){
+								$string_to_sign = "This message is to prove ownership of the address of '".$bitcoin_address."' and in no way, shape or form is it a legal binding contract. |".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address;
+							}else{
+								//Remove all | pipes from the string to prevent the message from breaking the ending signature thing.
+								$message_to_sign = str_replace("|", "", $message_to_sign);
+								$string_to_sign = $message_to_sign."|".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address;
+							}
+							
 						//Return string to sign
 						$output["string_to_sign"] = $string_to_sign;
 						
@@ -1205,18 +1215,15 @@
 					
 				}else if($step == 2){
 					//Validate information
-					
-					//First decode the incomming $step_2_original_data
-					$step_2_decoded_data = bdk_decode_message($step_2_original_data);
-					
-					//Second split decoded data so we can do some integrity checks
-					$step_2_decoded_data_split = explode("|", $step_2_decoded_data);
+
+					//Split data so we can do some integrity checks
+					$step_2_decoded_data_split = explode("|", $step_2_original_data);
 					
 					/*
 					step_2_decoded_data_split Table
 					[0] = original message
 					[1] = Time stamp
-					[2] = Server Checksum
+					[2] = (Client provided) Server Checksum
 					[3] = Random String
 					[4] = Bitcoin Address attempting to authenticate
 					*/
@@ -1229,7 +1236,7 @@
 						//So far soo good the data is intact, now we must verify that the Bitcoin signature is valid with the data
 						
 						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $step_2_decoded_data);
-						
+
 						if($valid_message_status["return_status"] == 1){
 							//A valid message! But is this token expired?
 							if((time() - $step_2_decoded_data_split[1]) <= $bdk_settings["coin_authentication_timeout"]){
@@ -1259,372 +1266,6 @@
 			
 		}else{
 			$output["return_status"] = 105;
-		}
-		
-		return $output;
-	}
-	
-	
-	
-	
-	
-	/** ** **
-		Cart Functions
-	** ** **/
-	
-	/*
-		bdk_cart_generate_checksum()
-		
-	*/
-	function bdk_cart_generate_checksum($token){
-		global $bdk_integrity_check, $bdk_settings;
-		
-		$output["return_status"]	= - 1;
-		$output["checksum"] = '';
-		
-		/* Return status codes
-			-1 = Failure to collect information on the receipt
-			1 = Success
-			
-			100 = no token provided (no string provided)
-			101 = Raw url decode failed
-			102 = base64 decode failed
-			103 = json decode failed
-		*/
-		
-		if($token != ''){
-			//Rawurldecode
-			$rawurl_encoded_token = $token;
-			
-			//Raw url decode (output is base64)
-			if($base64_encoded_token = rawurldecode($rawurl_encoded_token)){
-			
-				//Base64 decode (output is plaintext json)
-				if($plaintext_json_token = base64_decode($base64_encoded_token)){
-				
-					//String to PHP Array
-					if($token_array = json_decode($plaintext_json_token, true)){
-					
-						//Set checksum to blank (just in case)
-						$token_array["checksum"] = '';
-						
-						//Create a new token
-						$new_token				= Array();
-						$new_token["random_token"]	= '';
-						$new_token["product_id_list"] = Array();
-						$new_token["checksum"]	= '';
-						
-						//Set new tokens' information
-						$new_token["random_token"] = $token_array["random_token"];
-						$new_token["product_id_list"] = $token_array["product_id_list"];
-						$new_token["checksum"] = '';
-						
-						//Encode token for the checksum
-						$checksum_of_new_token_tmp = json_encode($new_token);
-						$checksum_of_new_token_tmp = base64_encode($checksum_of_new_token_tmp);
-						$checksum_of_new_token_tmp = rawurlencode($checksum_of_new_token_tmp);
-						
-						//Define checksum
-						$output["checksum"]= hash($bdk_settings["hash_type"], $checksum_of_new_token_tmp);
-
-						//Successfully generated a checksum
-						$output["return_status"] = 1;
-					}else{
-						//Json decode failed
-						$output["return_status"] = 103;
-					}
-				}else{
-					//Base 64 decode faile
-					$output["return_status"] = 102;
-				}
-			}else{
-				//Raw url decode failed.
-				$output["return_status"] = 101;
-			}
-		}else{
-			//Json token now set
-			$output["return_status"] = 100;
-		}
-		
-		return $output;
-	}
-	
-	
-	/*
-		bdk_validate_cart()
-		
-	*/
-	function bdk_validate_cart($token){
-		global $bdk_integrity_check, $bdk_settings;
-		
-		$output["return_status"]	= - 1;
-		$output["isvalid"] = 0;
-		
-		/* Return status codes
-			-1 = Failure to collect information on the receipt
-			1 = Success
-			
-			100 = no token provided (no string provided)
-		*/
-		
-		if($token != null && $token != ''){
-		
-			//Generate a serverside checksum
-			$serverside_checksum = bdk_cart_generate_checksum($token);
-			
-			
-			//Extract the clientside checksum to compare against...
-			$tmp_token = $token;
-			if($tmp_token = rawurldecode($tmp_token)){
-				if($tmp_token = base64_decode($tmp_token)){
-					if($tmp_token = json_decode($tmp_token, true)){
-							
-							//Define clientside checksum
-							$clientside_checksum = $tmp_token["checksum"];
-							
-						//Do compare
-						if($clientside_checksum == $serverside_checksum["checksum"]){
-							//Is valid
-							$output["isvalid"] = 1;
-							
-							//Successfull function run.
-							$output["return_status"] = 1;
-						}else{
-							//NOT valid
-							$output["isvalid"] = 0;
-							
-							//Successfull function run
-							$output["return_status"] = 1;
-						}
-					}else{
-						//Token failed to json_decode (Consider Invalid)
-						$output["isvalid"] = 0;
-						
-						//Successfull run
-						$output["return_status"] = 1;
-					}
-				}else{
-					//Token failed to base64_decode (Consider invalid)
-					$output["isvalid"] = 0;
-					
-					//Successful run
-					$output["return_status"] = 1;
-				}
-			}else{
-				//Token failed to rawurldecode (Consider invalid)
-				$output["isvalid"] = 0;
-				
-				$output["return_status"] = 1;
-			}
-		}else{
-			//Token was not set
-			$output["isvalid"] = 0;
-			
-			//Successfull function run
-			$output["return_status"] = 1;
-		}
-		
-		
-		return $output;
-	}
-	
-	
-	/*
-			bdk_start_cart()
-			Purpose: 
-			
-			Parameter(s) Explaination
-	*/
-	function bdk_start_cart(){
-		global $bdk_integrity_check, $bdk_settings;
-		
-		$output["return_status"]	= - 1;
-		$output["token"]	= '';
-		
-		/* Return status codes
-			-1 = Failure to collect information on the receipt
-			1 = Success
-			
-			100 = Random string failed to generate
-		*/
-
-		//Generate a random token id
-		$generate_random_token_id = bdk_generate_random_string(512);
-		
-		if($generate_random_token_id["return_status"] == 1){
-			//Generate receipt json token.
-			$receipt = Array();
-			$receipt["random_token"]	= '';
-			$receipt["product_id_list"]	= Array();
-			$receipt["checksum"]		= '';
-			
-			//Random token successfully generated attach it to the new receipt
-			$receipt["random_token"] = $generate_random_token_id["random_string"];
-			
-			//Make a temporary json string for generating a checksum
-			$tmp_json_string = json_encode($receipt);
-			$tmp_json_string = base64_encode($tmp_json_string);
-			$tmp_json_string = rawurlencode($tmp_json_string);
-			
-				//Generate checksum
-				$tmp_checksum = hash($bdk_settings["hash_type"], $tmp_json_string);
-				
-				//Add checksum to receipt
-				$receipt["checksum"] = $tmp_checksum;
-				
-			//output the json token
-			$output["token"] = json_encode($receipt);
-			$output["token"] = base64_encode($output["token"]);
-			$output["token"] = rawurlencode($output["token"]);
-
-			//Generation of everything looks good
-			$output["return_status"] = 1;
-		}else{
-			//Generation of random token id failed
-			$output["return_status"] = 100;
-		}
-		
-		return $output;
-	}
-	
-	
-	/*
-		bdk_get_cart_info()
-	
-	*/
-	function bdk_get_cart_info($token, $auto_fix=0){
-		global $bdk_integrity_check, $bdk_settings;
-		
-		$output["return_status"]	= - 1;
-		$output["product_id_list"] = Array();
-		$output["token"] = '';
-		$output["plaintext_token"] = '';
-		
-		/* Return status codes
-			-1 = Failure to collect information on the receipt
-			1 = Success
-			
-			100 = Token isn't valid.
-			101 = Failed to generate a new cart
-		*/
-		
-		//Validate cart first
-		$validate_cart = bdk_validate_cart($token);
-		if($validate_cart["return_status"] == 1 && $validate_cart["isvalid"] == 1){
-			//Token looks valid, lets retireve the information
-			
-			//Relay token..
-			$output["token"] = $token;
-			
-			//Convert string into PHP array
-			$tmp_token = $token;
-			$tmp_token = rawurldecode($tmp_token);
-			$tmp_token = base64_decode($tmp_token);
-			$output["plaintext_token"] = $tmp_token; //Define plaintext token.
-			$tmp_token = json_decode($tmp_token, true);
-			
-			//Define product id list
-			$output["product_id_list"] = $tmp_token["product_id_list"];
-			
-			//Success
-			$output["return_status"] = 1;
-
-		}else{
-			//Cart token isn't valid
-			if($auto_fix == 0){
-				//Token is invalid
-				$output["return_status"] = 100;
-			}else{
-				//Generate a new cart
-				$new_cart = bdk_start_cart();
-				
-				if($new_cart["return_status"] == 1){
-					$output["token"] = $new_cart["token"];
-					$output["product_id_list"] = Array();
-					$output["plaintext_token"] = base64_decode(rawurldecode($new_cart["token"]));
-					
-					//Success
-					$output["return_status"] = 1;
-				}else{
-					$output["return_status"] = 101;
-				}
-			}
-		}
-		
-		return $output;
-	}
-	
-	
-	/*
-		bdk_add_to_cart()
-	*/
-	function bdk_add_to_cart($token, $product_id, $auto_fix=0){
-		global $bdk_integrity_check, $bdk_settings;
-		
-		$output["return_status"] = -1;
-		$output["token"] = '';
-		
-		/* Return status codes
-			-1 = Failure to collect information on the receipt
-			1 = Success
-			
-			100 = Retrieving of cart information failed.
-			101 = generationg of checksum failed.
-			102 = Failed to encode into json string.
-			103 = failed to base64 encdoe.
-			104 = failed to raw url encode.
-		*/
-		
-		//Get decoded token
-		
-		$cart_info = bdk_get_cart_info($token, $auto_fix);
-		if($cart_info["return_status"] == 1){
-			//Retrieving of cart information succeeded, now attempt to add to the receipt
-			
-			$token_as_array = json_decode($cart_info["plaintext_token"], true);
-
-			//Add to product id list
-			array_push($token_as_array["product_id_list"], (int)$product_id);
-			
-			//Generate new receipt
-			$receipt = Array();
-			$receipt["random_token"] = '';
-			$receipt["product_id_list"] = Array();
-			$receipt["checksum"] = '';
-			
-			$receipt["random_token"] = $token_as_array["random_token"];
-			$receipt["product_id_list"] = $token_as_array["product_id_list"];
-			
-			//Attempt to generate checksum
-			$tmp_json_string = rawurlencode(base64_encode(json_encode($receipt)));
-			$tmp_checksum = bdk_cart_generate_checksum($tmp_json_string);
-
-			if($tmp_checksum["return_status"] == 1){
-				$receipt["checksum"] = $tmp_checksum["checksum"];
-				
-				//Json encode the receipt
-				if($output["token"] = json_encode($receipt)){
-					//Base64 the receipt
-					if($output["token"] = base64_encode($output["token"])){
-						//Raw url encode
-						if($output["token"] = rawurlencode($output["token"])){
-							$output["return_status"] = 1;
-						}else{
-							$output["return_status"] = 104;
-						}
-					}else{
-						$output["return_status"] = 103;
-					}
-				}else{
-					//Failed to encode into json string
-					$output["return_status"] = 102;
-				}
-			}else{
-				$output["return_status"] = 101;
-			}
-		}else{
-			//Retrieving of cart information failed
-			$output["return_status"] = 100;
 		}
 		
 		return $output;
