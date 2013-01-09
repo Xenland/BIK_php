@@ -242,10 +242,12 @@
 								$tmp_command_executed = 0;
 							}
 							
-							if($tmp_command_executed == 1){
+	
+							
+							if($tmp_command_executed == 1 && $tmp_valid_bitcoin_address != null){
 								$output["return_status"] = 1;
 								
-								if($tmp_valid_bitcoin_address["isvalid"] == 1){
+								if($tmp_valid_bitcoin_address["isvalid"] == true){
 									//This is a valid address report it as such
 									$output["return_status"] = 1;
 									
@@ -416,28 +418,14 @@
 			Purpose: query Bitcoin and verify the message associated with this bitcoin address and signatures.
 			
 			Usage(s):
-					Contract Usage Example:
-						Lets say user A writes out a contract, the developer should take the direct input and base64_encode()
-						The dev should then output the base64_encoded() string, perferrably in a textarea or text input box
-						The dev should ask the user to sign the base64_encoded() string and submit the signature to another different text input box
-						The dev should take the arguments and plug them into bitcoin_verify_message and if it is valid then accept the contract as signed
-						
-					Login Authentication System
-						The visiting user wants to anonymously login with the identity of a Bitcoin address
-						The website generates a long random string (perferably 512 characters or more but 4096 should be the most before its over kill)
-						The website outputs this long random string in a base64_encoded() format and displays it to the user
-						The visitor then signs the base64_encoded() message and then sends the signature to the website
-						The website then verifys the signature is matched if matched then create a session for this visitor.
-						
+				TO DO:
 		*/
-		function bitcoin_verify_message($bitcoin_address='', $signature='', $message='', $enable_consistency_filter=1){
+		function bitcoin_verify_message($bitcoin_address='', $signature='', $message=''){
 			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
 			$output["message_valid"] = -1; // -1 not changed; 0 message not vaild; 1 message valid;
-			$output["original_message"] = '';
-			$output["filtered_message"] = '';
 			
 			/* Return status codes
 				-1 = Failure to verify address
@@ -446,19 +434,6 @@
 				100 = Bitcoin connection was unable to be established
 				101 = Query failed
 			*/
-			
-			//Define local only variables
-				$output["original_message"] = $message;
-				
-				//Apply a filter which will help promtoe consistancy across all browsers
-				if($enable_consistency_filter == 1){
-					//Filter, goaled at making it act consistant across Browsers, OSystem, etc
-					$filtered_message = bdk_encode_message($message);
-				}else{
-					//Don't filter
-					$filtered_message = $message;
-				}
-			
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
 			
@@ -468,30 +443,27 @@
 					$tmp_command_success = 0;
 					
 					try{
-						$tmp_verifymessage_status = $new_btcclient_connection["connection"]->verifymessage($bitcoin_address, $signature, $filtered_message);
+						$tmp_verifymessage_status = $new_btcclient_connection["connection"]->verifymessage($bitcoin_address, $signature, $message);
 						$tmp_command_success = 1;
 					}catch(Exception $e){
 						$tmp_verifymessage_status = '';
 						$tmp_command_success = 0;
 					}
-					
-					if($tmp_command_success == 1){
-						if($tmp_verifymessage_status == 1){
+
+					if($tmp_verifymessage_status == false || $tmp_verifymessage_status == true){
+						//Query to successfully executed
+						
+						if($tmp_verifymessage_status == true){
 							$output["message_valid"] = 1;
-						}else{
+						}else if($tmp_verifymessage_status == false){
 							$output["message_valid"] = 0;
 						}
 						
-						$output["filtered_message"] = $filtered_message;
-						
-						//Success
 						$output["return_status"] = 1;
 					}else{
-						//Command failed
+						//Failed to query for a verifymessage
 						$output["return_status"] = 101;
 					}
-					
-					
 				}else{
 					//Connection to Bitcoin failed
 					$output["return_status"] = 100;
@@ -1149,10 +1121,7 @@
 					^^^ That only matters if you are relying on the message to be intact as it was when it once left the server and you don't have a DB to check/verify message integrity.
 			
 			Parameter(s) Explaination
-			$bitcoin_address: This is the address the visitor/user is requesting to verify their identity with.
-			$step: This is the step the user is one, step 1 will generate a random string to "sign" with the Bitcoin.org Client (Satoshi Client)
-			$step_2_signature: This is the signature the visitor/user provides
-			$step_2_original_data: This is data the server provided (required to do a comparison with out a database)
+				TO DO: ....
 	*/
 	function bdk_prove_coin_ownership($bitcoin_address='', $step=1, $step_2_signature='', $step_2_original_data='', $message_to_sign=''){
 		global $bdk_integrity_check, $bdk_settings;
@@ -1174,10 +1143,17 @@
 			105 = (Same as 104 only different for debugging purposes)  Bitcoin address was not set, with out the address we can't retrieve any Bitcoin information
 			106 = message did not validate, signature should not be trusted
 		*/
+		
+		/** Filter - Sanatize **/
+		$step_2_signature = trim($step_2_signature);
+		$step_2_original_data = trim($step_2_original_data);
+		$message_to_sign = trim($message_to_sign);
+		
 		if($bitcoin_address != ''){
+
 			//Check if this Bitcoin address is valid before expending the resources to generate a random string/checking, etc
 			$bitcoin_validation_status = bitcoin_validate_address($bitcoin_address);
-	
+
 			if($bitcoin_validation_status["return_status"] == 1 && $bitcoin_validation_status["isvalid"] == 1){
 				//This Bitcoin address is valid, what did we want to do now that we know this?
 				if($step == 1){
@@ -1192,11 +1168,11 @@
 						$current_time_sync = time(); //We set in a variable so all time references are the same during code-execution.
 						
 						//Server Checksum
-						$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $current_time_sync.$random_string.$bdk_integrity_check.$bitcoin_address)));
+						$server_checksum = hash($bdk_settings["hash_type"], $current_time_sync.$random_string.$bdk_integrity_check.$bitcoin_address);
 						
 						//String to sign
 							if($message_to_sign == ''){
-								$string_to_sign = "This message is to prove ownership of the address of '".$bitcoin_address."' and in no way, shape or form is it a legal binding contract. |".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address;
+								$string_to_sign = "This message is to prove ownership of the address of ".$bitcoin_address." and in no way, shape or form is it a legal binding contract. |".$current_time_sync."|".$server_checksum."|".$random_string."|".$bitcoin_address;
 							}else{
 								//Remove all | pipes from the string to prevent the message from breaking the ending signature thing.
 								$message_to_sign = str_replace("|", "", $message_to_sign);
@@ -1229,14 +1205,15 @@
 					*/
 					
 					//Create a serverside checksum based on the provided information
-					$server_checksum = hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], hash($bdk_settings["hash_type"], $step_2_decoded_data_split[1].$step_2_decoded_data_split[3].$bdk_integrity_check.$step_2_decoded_data_split[4])));
+					$server_checksum =hash($bdk_settings["hash_type"], $step_2_decoded_data_split[1].$step_2_decoded_data_split[3].$bdk_integrity_check.$step_2_decoded_data_split[4]);
 
-					//See if the server checksum matches with the
+					//See if the server checksum matches with the client provided serverchecksum
 					if($server_checksum == $step_2_decoded_data_split[2]){
 						//So far soo good the data is intact, now we must verify that the Bitcoin signature is valid with the data
-						
-						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $step_2_decoded_data);
-					
+						$tmp_hash_message = hash($bdk_settings["hash_type"], $step_2_original_data);
+
+						$valid_message_status = bitcoin_verify_message($bitcoin_address, $step_2_signature, $tmp_hash_message);
+
 						if($valid_message_status["return_status"] == 1 && $valid_message_status["message_valid"] == 1){
 							//A valid message! But is this token expired?
 							if((time() - $step_2_decoded_data_split[1]) <= $bdk_settings["coin_authentication_timeout"]){
