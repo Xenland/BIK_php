@@ -960,7 +960,7 @@
 			$amount_due: This should be expressed in satoshi. For one Bitcoin 100000000 should be entered in.
 			$product_id_array: This has to be an array regardless of key/pair data/value count
 	*/
-	function bdk_generate_receipt($amount_due_in_satoshi = 0, $product_id_array = Array()){
+	function bdk_generate_receipt($amount_due_in_satoshi = 0, $product_id_array = Array(), $additional_info = Array()){
 		global $bdk_integrity_check, $bdk_settings;
 		
 		//Define local/private variables
@@ -985,17 +985,21 @@
 			$receipt_data["timestamp_generated"]		= time();
 			$receipt_data["amount_due_in_satoshi"]	= (int) 0;
 			$receipt_data["products_in_receipt"]		= Array();
+			$receipt_data["additional_info"]			= Array();
 			
 			
 			//Sanatize variables
 				$amount_due_in_satoshi = (int) floor(intval($amount_due_in_satoshi));
+				
+				//Assign amount due to the receipt data array
+				$receipt_data["amount_due_in_satoshi"] = $amount_due_in_satoshi;
 				
 				//Apply limits to $amount_due_in_satoshi to 0 and 21 mill
 					if($amount_due_in_satoshi <= 0){
 						$amount_due_in_satoshi = 0;
 					}
 				
-				//Loop through all product ids in $product_id_address and convert them to integers
+				//Loop through all product ids in $product_id_address and convert them to integers (Still needs to be done Apparently)
 					$num_product_ids_in_array = count($product_id_array);
 					
 					//while($a = 0; $a < $num_product_ids_in_array; $a++){
@@ -1004,6 +1008,9 @@
 
 				//Assign product ids to the $receipt_data array
 				$receipt_data["products_in_receipt"] = $product_id_array;
+				
+				//Assign the additional info array into the receipt
+				$receipt_data["additional_info"] = $additional_info;
 				
 				//JSON Encode
 				$receipt_data_json_encoded = json_encode($receipt_data);
