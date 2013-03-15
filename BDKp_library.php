@@ -39,8 +39,8 @@
 	Begin Defining Runtime variables. (Don't configure these variables unless you absolutly are sure you know what you are doing!!!)
 	*/
 		//Set error_reporting for this page
-		error_reporting(0);
-		//error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
+		//error_reporting(0);
+		error_reporting(E_ERROR | E_WARNING | E_PARSE | E_COMPILE_ERROR); //Used for temporary use for developers to turn on/off (Remember to comment this before commiting or it won't be approved if you change this value!)
 		
 	
 	
@@ -490,7 +490,30 @@
 				1 = Success 
 				
 				100 = Failure to connect to Bitcoin client
+				101 = Failed to execute command
 			*/
+			
+			//Cast/Limit variables
+				//Remove non-UTF8 binary data from text string.
+				$account = iconv("UTF-8", "UTF-8//IGNORE", $account);
+				
+				//Cast to int
+				$count = (int)$count;
+				
+				//Limit Floor to $count
+				if($count <= 0){
+					$count = 1;
+				}
+				
+				//Cast to int
+				$from = (int)$from;
+			
+				//Limit From to $count
+				if($from < 0){
+					$from = 0;
+				}
+			
+			
 			
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
@@ -498,6 +521,11 @@
 			//Bitcoin connection open?
 				if($new_btcclient_connection["return_status"] == 1){
 					$output["transaction_list"] = $new_btcclient_connection["connection"]->listtransactions($account, $count, $from);
+					if(is_array($output["transaction_list"])){
+						$output["return_status"] = 1;
+					}else{
+						$output["return_status"] = 101;
+					}
 				}else{
 					//Connection to Bitcoin failed
 					$output["return_status"] = 100;
