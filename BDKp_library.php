@@ -502,24 +502,40 @@
 		
 		
 		
-		/*
+		/**
 			bitcoin_list_transactions()
-			Purpose: query Bitcoin and return all transactions
-		*/
+			
+			Purpose
+				Query Bitcoin and return all transactions
+				
+			Parameter Explanation
+				account | (optional) | If set to star "*" then all addresses fit criteria, other wise set to the bitcoin address label
+				  count | (optional) | How many transactions to limit the list to
+				   from | (optional) | How many transactions to skip "from" the beginning.
+				   
+			Output Explanation
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 1 = Success 
+						Notes: If success, then this function ran with out errors and
+						all output data is considered "useable".
+					
+					100 = Failure to connect to Bitcoin client
+					101 = Failed to execute command
+					
+				Transaction List
+					
+		**/
 		function bitcoin_list_transactions($account='*', $count=9999999999999, $from=0){
 			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
 			$output["return_status"] = -1;
 			$output["transaction_list"] = null;
-			
-			/* Return status codes
-				-1 = Failure to generate address
-				1 = Success 
-				
-				100 = Failure to connect to Bitcoin client
-				101 = Failed to execute command
-			*/
+
 			
 			//Cast/Limit variables
 				//Remove non-UTF8 binary data from text string.
@@ -564,12 +580,40 @@
 		
 		
 		
-		/*
+		/**
 			bitcoin_get_received_by_address()
-			Purpose: query Bitcoin and return the total overall acumulated Bitcoins for this account
-			Notes:
-				With out a Bitcoin address this function fails with error at the Bitcoind level so we produce a software error
-		*/
+			
+			Purpose
+				Query Bitcoin and return the total overall acumulated Bitcoins for this account
+			
+			Parameter Explanation
+					bitcoin_address | (required) | The address you own and want to check the "total bitcoins ever recieved" to that address.
+				  minimum_confirmations | (optional) | min confirmations required to match the criteria.
+				  
+			Output Explanation
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 1 = Success 
+						Notes: If success, then this function ran with out errors and
+						all output data is considered "useable".
+					
+					100 = Failure to connect to Bitcoin client
+					101 = Failure to retrieve balance
+					102 = Invalid Bitcoin address was set
+					
+				total received in satoshi
+					The amount of Bitcoins in total received to this address
+					in the integer (1 = 1 satoshi = 0.00000001 Bitcoins)
+					
+				total received in bitcoin
+					(DO NOT USE THIS WITH FORMULAS)
+					The amount of Bitcoins in total received to this address
+					in the decimal/float/double format.
+				
+		**/
 		function bitcoin_get_received_by_address($bitcoin_address='', $minimum_confirmations=1){
 			global $bdk_integrity_check, $bdk_settings;
 			
@@ -577,23 +621,15 @@
 			$output["return_status"] = -1;
 			$output["total_received_in_satoshi"] = (int) 0; //Integers only
 			$output["total_received_in_bitcoin"] = (double) 0.00000000; //Decimal/Float/Double (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
-			
-			/* Return status codes
-				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
-				1 = Success 
-				
-				100 = Failure to connect to Bitcoin client
-				101 = Failure to retrieve balance
-				102 = Invalid Bitcoin address was set
-			*/
+
 			
 			//Sanatize incomming parameters
-				$bitcoin_address = strip_tags($bitcoin_address); //I went with strip_tags for now, all I can think of is perhaps someone enables error reporting somehow and made the Bitcoin address into a XSS/XSRF attack made up of a string of javavscript)
-				$minimum_confirmations = (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
+				$bitcoin_address	= strip_tags($bitcoin_address); //I went with strip_tags for now, all I can think of is perhaps someone enables error reporting somehow and made the Bitcoin address into a XSS/XSRF attack made up of a string of javavscript)
+				$minimum_confirmations	= (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
 			
 			//Create a floor limit of zero
 				if($minimum_confirmations <= 0){
-					$minimum_cofirmations = 0;
+					$minimum_confirmations = 0;
 				}
 				
 				
@@ -657,10 +693,39 @@
 		
 		
 		
-		/*
+		/**
 			bitcoin_sendfrom()
-			Purpose: query Bitcoin and send Bitcoins from an account/address to the specified address
-		*/
+			
+			Purpose 
+				Query Bitcoin and send Bitcoins from an account/address to the specified address
+				
+			Parameter Explanation
+				  bitcoin_address_label [string] | (required) | Which "bitcoin addresses" should the Bitcoins be spent from, addresses are identfied by matching "label".
+				send_to_bitcoin_address [string] | (required) | Which address to send/spend the Bitcoins to.
+				     amount_in_satoshi [integer] | (required) | The amount of Bitcoins (in satoshi)
+				  minimum_cofirmations [integer] | (optional) | Only send bitcoins with this many confirmations (or greater).
+			
+			Output Explanation
+				
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 1 = Success 
+						Notes: If success, then this function ran with out errors and
+						all output data is considered "useable".
+					
+					100 =  Bitcoin connection failed
+					101 = Command failed
+					
+					
+				tx_id
+					If the return status is (1) then this output will be set with the corresponding tx id.
+						
+				error_rpc_message
+					If an error happened at the Bitcoin level then this will contain that error message (Usually set when return status is not 1)
+		**/
 		function bitcoin_sendfrom($bitcoin_address_label='', $send_to_bitcoin_address='', $amount_in_satoshi=00000000, $minimum_confirmations=1){
 			global $bdk_integrity_check, $bdk_settings;
 			
@@ -670,15 +735,6 @@
 			
 			$output["error_rpc_message"] = '';
 
-			/* 
-				Return status codes
-				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
-				1 = Success 
-				
-				100 =  Bitcoin connection failed
-				101 = Command failed
-			*/
-			
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
 				
@@ -719,6 +775,7 @@
 		}
 		
 		
+		
 		/**
 			bitcoin_sendmany()
 			
@@ -727,9 +784,26 @@
 			
 			Parameter Explanation
 				bitcoin_address_label [string] | (required) | Which "bitcoin addresses" should the Bitcoins be spent from, addresses are identfied by matching "label".
-				send_to_bitcoin_address [array] | (required) | { }
-			
-			Bitcoin API: <fromaccount> {address:amount,...} [minconf=1] [comment] 
+				send_to_bitcoin_address [array] | (required) | Array("Address" => (double)0.0005, Address => (double)0.0005)
+				minimum_cofirmations [integer] | (optional) | Only send bitcoins with this many confirmations (or greater).
+				
+			Output Exlanation
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 1 = Success 
+						Notes: If success, then this function ran with out errors and
+						all output data is considered "useable".
+
+					100 =  Bitcoin connection failed
+					101 = Command failed
+					
+				Error Rpc Message
+					Notes: if the Bitcoin query errors it will be placed into this variable for debuging
+						This is not needed other than debugging/error.
+				
 		**/
 		function bitcoin_sendmany($bitcoin_address_label='', $send_to_bitcoin_address='', $minimum_confirmations=1, $comment=''){
 			global $bdk_integrity_check, $bdk_settings;
@@ -739,14 +813,6 @@
 			
 			$output["error_rpc_message"] = '';
 
-			/* 
-				Return status codes
-				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
-				1 = Success 
-				
-				100 =  Bitcoin connection failed
-				101 = Command failed
-			*/
 			
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
@@ -947,11 +1013,31 @@
 				return $output;
 			}
 			
-			/*
+			
+			/**
 				bdk_generate_random_string()
-				Purpose: Generates a length of random text
-			*/
-			function bdk_generate_random_string($length=4096){
+				
+				Purpose
+					Generates a length of random text
+					
+				Parameter Explanation
+					length | (optional) | the maximum string length the output should be like.
+					
+				Output Explanation
+					Return Status
+						-1 = Epic Failure
+							Notes: This function magically did not run, 
+							Reailty as we know it probubly ended if this happened.
+						
+						1 = Success 
+							Notes: If success, then this function ran with out errors and
+							all output data is considered "useable".
+						
+						100 =  Failed to generate the target length
+					
+				
+			**/
+			function bdk_generate_random_string($length=4096, $character_quick=0, $characters=''){
 				global $bdk_settings;
 				
 				
@@ -959,16 +1045,10 @@
 				$output["return_status"] = -1;
 				$output["random_string"] = '';
 				$output["infinite_loop_fault_detected"] = 0; //This is helpfull for debugging or extra "checK" if the generation function did its job
-				
-				/* 
-					Return status codes
-					-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
-					1 = Success 
-					
-					100 =  Failed to generate the target length
-				*/
-				
-				$characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+				if(strlen($characters) < 1){
+					$characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+				}
 				
 				//Begin random generation
 				$continue_generating = 1;

@@ -45,5 +45,6 @@
 	
 	//Define Integrity checks (checksum details)
 	$bdk_integrity_check = 'TypeALongRandomStringHere'; //Generate a random string that is atleast 4096 characters long, Random number here:  http://textmechanic.com/Random-String-Generator.html
+
 ?>
 	
