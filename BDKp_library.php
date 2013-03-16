@@ -719,13 +719,19 @@
 		}
 		
 		
-		/*
+		/**
 			bitcoin_sendmany()
-			Purpose: query Bitcoin and send Bitcoins to many Bitcoins addresses...
+			
+			Purpose
+				Query Bitcoin and send Bitcoins to many Bitcoins addresses...
+			
+			Parameter Explanation
+				bitcoin_address_label [string] | (required) | Which "bitcoin addresses" should the Bitcoins be spent from, addresses are identfied by matching "label".
+				send_to_bitcoin_address [array] | (required) | { }
 			
 			Bitcoin API: <fromaccount> {address:amount,...} [minconf=1] [comment] 
-		*/
-		function bitcoin_sendmany($bitcoin_address_label='', $send_to_bitcoin_address = Array(), $minimum_confirmations=1, $comment=''){
+		**/
+		function bitcoin_sendmany($bitcoin_address_label='', $send_to_bitcoin_address='', $minimum_confirmations=1, $comment=''){
 			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
@@ -807,7 +813,7 @@
 					amount | total amount of the transaction
 				 confirmations | total confirmations verified for this tx
 					  txid | Transaction ID
-					  time | Time the transaction was verified (occured?)
+					  time | Time the transaction became aware in the network (was added to the tx pool)
 				       details | An array of variables with each array slot containing
 						 the following variable group:
 										"account"
