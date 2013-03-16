@@ -147,7 +147,7 @@
 			bitcoin_generate_new_address()
 			Purpose: query Bitcoin and return address, returns -1 if no valid address was able to create
 			
-			Parameter(s) Explaination
+			Parameter(s) Explanation
 			$new_address_label: If set (not required) will label this address with the set text, usefull for tracking #ids or cookies relationships, etc....
 		*/
 		function bitcoin_generate_new_address($new_address_label=''){
@@ -205,8 +205,6 @@
 		*/
 		function bitcoin_validate_address($bitcoin_address=''){
 		
-			
-			
 			//Define local/private variables
 			$output["return_status"] = -1;
 			$output["isvalid"] = 0; //(Binary)
@@ -313,23 +311,30 @@
 			bitcoin_get_address_label()
 			Purpose: query Bitcoin and return the label assigned to the associated address
 			
-			Parameter(s) Explaination
+			Parameter(s) Explanation
 			$bitcoin_address: this is to query bitcoin for the associated label
 			
-			Output(s) Explaination
+			Output(s) Explanation
 			$output["address_label"] Upon success will be the label associated with the inputed Bitcoin address
+			
+				**The following are only set if the bdk_generate_receipt was used to generate the label**
+				$output["checksum"] (The checksum of the whole json label -- Not generally useful outside of this function)
+				$output["checksum_match"] (Checksum validility status | -1=Unknown; 0=False; 1= Success, Checksum good)
+				$output["amount_due_in_satoshi"] (If the checksum is valid (1) then the amount due in satoshi will be set according to the receipt lable information)
+				$output["timestamp_generated"] (If the checksum is valid (1) then timestamp generated will be set according to the server timestamp when the receipt was generated the very firstime)
+				$output["products_in_receipt"] (If the checksum is valid (1) this will contain what is intended for "product id" integers or even customer specific cart product ids could be useful here -- Remember to do your own cross validation of the Bitcoin receipts and server databases.)
 		*/
 		function bitcoin_get_address_label($bitcoin_address=''){
 			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
-			$output["return_status"]			= -1;
-			$output["address_label"]			= '';
+			$output["return_status"]		= -1;
+			$output["address_label"]		= '';
 			$output["checksum"]			= '';
 			$output["checksum_match"]		= -1; // -1=Unknown; 0=False; 1= Success, Checksum good
 			$output["amount_due_in_satoshi"]	= 0; //Amount due (according to the label and checksum verification)
-			$output["timestamp_generated"]	= 0; //Timestamp upon when the customer created the receipt (according to label and checksum verification)
-			$output["products_in_receipt"]	= Array();
+			$output["timestamp_generated"]		= 0; //Timestamp upon when the customer created the receipt (according to label and checksum verification)
+			$output["products_in_receipt"]		= Array();
 			
 			/* Return status codes
 				-1 = Failure to generate address
@@ -413,13 +418,40 @@
 
 
 
-		/*
+		
+		/**
 			bitcoin_verify_message()
-			Purpose: query Bitcoin and verify the message associated with this bitcoin address and signatures.
 			
-			Usage(s):
-				TO DO:
-		*/
+			
+			Purpose
+				Query Bitcoin and verify the message associated with this bitcoin address and signatures.
+			
+			
+			Parameter Explanation
+				$bitcoin_address | (required) | The address to verify the signature & message against 
+				$signature | (required) | The signature to verify the address & message against
+				$message | (required) | The message to verify the signature & bitcoin address against
+			
+			
+			Output(s) Explanation
+				Return Status
+					-1 = Failure to verify address
+					 1 = Success
+
+					100 = Bitcoin connection was unable to be established
+					101 = Query failed
+				
+					
+				Message Valid
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 0 = Message was not valid.
+					 
+					 1 = Message was valid.
+
+		**/
 		function bitcoin_verify_message($bitcoin_address='', $signature='', $message=''){
 			global $bdk_integrity_check, $bdk_settings;
 			
@@ -428,11 +460,7 @@
 			$output["message_valid"] = -1; // -1 not changed; 0 message not vaild; 1 message valid;
 			
 			/* Return status codes
-				-1 = Failure to verify address
-				1 = Success
 				
-				100 = Bitcoin connection was unable to be established
-				101 = Query failed
 			*/
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
@@ -749,55 +777,70 @@
 		
 		
 		
-		/*
+		/**
 			bitcoin_get_transaction()
-			Purpose: query Bitcoin and get information about the requested transaction.
 			
-			Bitcoin API: gettransaction <txid>
-				"amount" : total amount of the transaction
-				"confirmations" : number of confirmations of the transaction
-				"txid" : the transaction ID
-				"time" : time the transaction occurred
-				"details" - An array of objects containing:
-					"account"
-					"address"
-					"category"
-					"amount"
-					"fee" 
-		*/
+			Purpose
+			Query Bitcoin and get information about the requested transaction.
+			
+			Parameter Explanation
+			tx_id | (required) | the bitcoin transaction id
+				
+			Output Explanation
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run, 
+						Reailty as we know it probubly ended if this happened.
+						
+					 1 = Success 
+						Notes: If success, then this function ran with out errors and
+							all output data is considered "useable".
+							
+					 100 =  Bitcoin connection failed
+					 101 =  Bitcoin connected but failed to query command.
+					 
+					 
+				tx_info
+					Notes: The tx_info descriptions below may or may not be precise use caution
+						and your own dilegence.
+						
+					amount | total amount of the transaction
+				 confirmations | total confirmations verified for this tx
+					  txid | Transaction ID
+					  time | Time the transaction was verified (occured?)
+				       details | An array of variables with each array slot containing
+						 the following variable group:
+										"account"
+										"address"
+										"category"
+										"amount"
+										"fee"
+		**/
 		function bitcoin_get_transaction($tx_id=''){
 			global $bdk_integrity_check, $bdk_settings;
 		
 			//Define local/private variables
-			$output["return_status"] = -1;
+			$output["return_status"]		= -1;
 			
-			$output["tx_info"]["amount"] = (double) 0.00000000;
-			$output["tx_info"]["fee"] = (double) 0.00000000;
-			$output["tx_info"]["confirmations"] = (int) 0;
-			$output["tx_info"]["blockhash"] = (string) '';
-			$output["tx_info"]["blockindex"] = (int) 0;
-			$output["tx_info"]["blocktime"] = (int) 0;
-			$output["tx_info"]["txid"] = (string) '';
-			$output["tx_info"]["time"] = (int) 0;
-			$output["tx_info"]["timereceived"] = (int) 0;
+			$output["tx_info"]["amount"]		= (double) 0.00000000;
+			$output["tx_info"]["fee"]		= (double) 0.00000000;
+			$output["tx_info"]["confirmations"]	= (int) 0;
+			$output["tx_info"]["blockhash"]		= (string) '';
+			$output["tx_info"]["blockindex"]	= (int) 0;
+			$output["tx_info"]["blocktime"]		= (int) 0;
+			$output["tx_info"]["txid"]		= (string) '';
+			$output["tx_info"]["time"]		= (int) 0;
+			$output["tx_info"]["timereceived"]	= (int) 0;
 			
-			$output["tx_info"]["details"]["account"] = (string) '';
-			$output["tx_info"]["details"]["address"] = (string) '';
-			$output["tx_info"]["details"]["category"] = (string) '';
-			$output["tx_info"]["details"]["amount"] = (double) 0.00000000;
-			$output["tx_info"]["details"]["fee"] = (double) 0.00000000;
+			$output["tx_info"]["details"]["account"]	= (string) '';
+			$output["tx_info"]["details"]["address"]	= (string) '';
+			$output["tx_info"]["details"]["category"]	= (string) '';
+			$output["tx_info"]["details"]["amount"]		= (double) 0.00000000;
+			$output["tx_info"]["details"]["fee"]		= (double) 0.00000000;
 
-			/* 
-				Return status codes
-				-1 = Failure to run script (This shouldn't be taken litterly but basically nothing was ran)
-				1 = Success 
-				
-				100 =  Bitcoin connection failed
-				101 = 
-			*/
 			
 			//Open Bitcoin connection
-				$new_btcclient_connection = bitcoin_open_connection();
+			$new_btcclient_connection = bitcoin_open_connection();
 				
 			//Bitcoin Connection Open
 			if($new_btcclient_connection["return_status"] == 1){
@@ -817,22 +860,22 @@
 						$output["return_status"] = 1;
 						
 						//Set variables
-						$output["tx_info"]["amount"] = (double) $tmp_tx_info["amount"];
-						$output["tx_info"]["fee"] = (double) $tmp_tx_info["fee"];
-						$output["tx_info"]["confirmations"] = (int) $tmp_tx_info["confirmations"];
-						$output["tx_info"]["blockhash"] = (string) $tmp_tx_info["blockhash"];
-						$output["tx_info"]["blockindex"] = (int) $tmp_tx_info["blockindex"];
-						$output["tx_info"]["blocktime"] = (int) $tmp_tx_info["blocktime"];
-						$output["tx_info"]["txid"] = (string) $tmp_tx_info["txid"];
-						$output["tx_info"]["time"] = (int) $tmp_tx_info["time"];
-						$output["tx_info"]["timereceived"] = (int) $tmp_tx_info["timereceived"];
+						$output["tx_info"]["amount"]		= (double) $tmp_tx_info["amount"];
+						$output["tx_info"]["fee"]		= (double) $tmp_tx_info["fee"];
+						$output["tx_info"]["confirmations"]	= (int) $tmp_tx_info["confirmations"];
+						$output["tx_info"]["blockhash"]		= (string) $tmp_tx_info["blockhash"];
+						$output["tx_info"]["blockindex"]	= (int) $tmp_tx_info["blockindex"];
+						$output["tx_info"]["blocktime"]		= (int) $tmp_tx_info["blocktime"];
+						$output["tx_info"]["txid"]		= (string) $tmp_tx_info["txid"];
+						$output["tx_info"]["time"]		= (int) $tmp_tx_info["time"];
+						$output["tx_info"]["timereceived"]	= (int) $tmp_tx_info["timereceived"];
 						
 
-						$output["tx_info"]["details"]["account"] = (string) $tmp_tx_info["details"][0]["account"];
-						$output["tx_info"]["details"]["address"] = (string) $tmp_tx_info["details"][0]["address"];
-						$output["tx_info"]["details"]["category"] = (string) $tmp_tx_info["details"][0]["category"];
-						$output["tx_info"]["details"]["amount"] = (double) $tmp_tx_info["details"][0]["amount"];
-						$output["tx_info"]["details"]["fee"] = (double) $tmp_tx_info["details"][0]["fee"];
+						$output["tx_info"]["details"]["account"]	= (string) $tmp_tx_info["details"][0]["account"];
+						$output["tx_info"]["details"]["address"]	= (string) $tmp_tx_info["details"][0]["address"];
+						$output["tx_info"]["details"]["category"]	= (string) $tmp_tx_info["details"][0]["category"];
+						$output["tx_info"]["details"]["amount"]		= (double) $tmp_tx_info["details"][0]["amount"];
+						$output["tx_info"]["details"]["fee"]		= (double) $tmp_tx_info["details"][0]["fee"];
 						
 					}else{
 						//Failure to execute command
@@ -984,7 +1027,7 @@
 			bdk_generate_receipt()
 			Purpose: Queries Bitcoin for a new address and labels that address with various receipt data to keep track of it.
 			
-			Parameter(s) Explaination
+			Parameter(s) Explanation
 			$amount_due: This should be expressed in satoshi. For one Bitcoin 100000000 should be entered in.
 			$product_id_array: This has to be an array regardless of key/pair data/value count
 	*/
@@ -1086,7 +1129,7 @@
 			bdk_get_receipt_information()
 			Purpose: Queries a Bitcoin address, collects as much data as it can, then outputs what it knows
 			
-			Parameter(s) Explaination
+			Parameter(s) Explanation
 	*/
 	function bdk_get_receipt_information($bitcoin_address=''){
 		global $bdk_integrity_check, $bdk_settings;
@@ -1115,8 +1158,8 @@
 				//Extract receipt information from label function
 				
 				$output["checksum"]			= $bitcoin_label_information["checksum"];
-				$output["products_in_receipt"]	= $bitcoin_label_information["products_in_receipt"];
-				$output["timestamp_generated"]	= $bitcoin_label_information["timestamp_generated"];
+				$output["products_in_receipt"]		= $bitcoin_label_information["products_in_receipt"];
+				$output["timestamp_generated"]		= $bitcoin_label_information["timestamp_generated"];
 				$output["amount_due_in_satoshi"]	= $bitcoin_label_information["amount_due_in_satoshi"];
 				
 				//Return status success
@@ -1155,16 +1198,16 @@
 			Notes: Please note that this function is only secure depending on how many bits of entropy your $bdk_integrity_check variable including string length should be atleast 4096.
 					^^^ That only matters if you are relying on the message to be intact as it was when it once left the server and you don't have a DB to check/verify message integrity.
 			
-			Parameter(s) Explaination
+			Parameter(s) Explanation
 				TO DO: ....
 	*/
 	function bdk_prove_coin_ownership($bitcoin_address='', $step=1, $step_2_signature='', $step_2_original_data='', $message_to_sign=''){
 		global $bdk_integrity_check, $bdk_settings;
 		
 		//Define local/private variables
-		$output["return_status"]	= -1;
-		$output["bitcoin_address_authenticated"] = 0;
-		$output["string_to_sign"] = '';
+		$output["return_status"]			= -1;
+		$output["bitcoin_address_authenticated"] 	= 0;
+		$output["string_to_sign"]			= '';
 		
 		/* Return status codes
 			-1 = Failure to collect information on the receipt
@@ -1180,9 +1223,9 @@
 		*/
 		
 		/** Filter - Sanatize **/
-		$step_2_signature = trim($step_2_signature);
-		$step_2_original_data = trim($step_2_original_data);
-		$message_to_sign = trim($message_to_sign);
+		$step_2_signature	= trim($step_2_signature);
+		$step_2_original_data	= trim($step_2_original_data);
+		$message_to_sign	= trim($message_to_sign);
 		
 		if($bitcoin_address != ''){
 
