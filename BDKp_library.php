@@ -702,7 +702,7 @@
 			Parameter Explanation
 				  bitcoin_address_label [string] | (required) | Which "bitcoin addresses" should the Bitcoins be spent from, addresses are identfied by matching "label".
 				send_to_bitcoin_address [string] | (required) | Which address to send/spend the Bitcoins to.
-				     amount_in_satoshi [integer] | (required) | The amount of Bitcoins (in satoshi)
+				     amount_in_satoshi [integer] | (required) | The amount of Bitcoins (in satoshi) -- Don't use leading zeros (00050000) instead use (50000).
 				  minimum_cofirmations [integer] | (optional) | Only send bitcoins with this many confirmations (or greater).
 			
 			Output Explanation
@@ -726,7 +726,7 @@
 				error_rpc_message
 					If an error happened at the Bitcoin level then this will contain that error message (Usually set when return status is not 1)
 		**/
-		function bitcoin_sendfrom($bitcoin_address_label='', $send_to_bitcoin_address='', $amount_in_satoshi=00000000, $minimum_confirmations=1){
+		function bitcoin_sendfrom($bitcoin_address_label='', $send_to_bitcoin_address='', $amount_in_satoshi=0, $minimum_confirmations=1){
 			global $bdk_integrity_check, $bdk_settings;
 			
 			//Define local/private variables
@@ -734,7 +734,18 @@
 			$output["tx_id"] = '';
 			
 			$output["error_rpc_message"] = '';
-
+			
+			//Convert amount in satoshi to bitcoin decimal
+			$amount_in_satoshi = (int) $amount_in_satoshi;
+			$amount_in_bitcoins = (double) ($amount_in_satoshi / 10000000);
+			if($amount_in_bitcoins < 0.0){
+				$amount_in_bitcoins = 0.0;
+			}
+			
+			if($amount_in_bitcoins >= 21000000.0){
+				$amount_in_bitcoins = 21000000.0;
+			}
+			
 			//Open Bitcoin connection
 				$new_btcclient_connection = bitcoin_open_connection();
 				
@@ -747,7 +758,7 @@
 					$tmp_command_success = 0;
 					
 					try{
-						$tmp_verifymessage_status = $new_btcclient_connection["connection"]->sendfrom($bitcoin_address_label, $send_to_bitcoin_address, $amount_in_satoshi, $minimum_confirmations, '', '');
+						$tmp_verifymessage_status = $new_btcclient_connection["connection"]->sendfrom($bitcoin_address_label, $send_to_bitcoin_address, $amount_in_bitcoins, $minimum_confirmations, '', '');
 						$tmp_command_success = 1;
 					}catch(Exception $e){
 						

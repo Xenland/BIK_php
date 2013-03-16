@@ -1,4 +1,4 @@
 test.php
 *.*~
 .gitignore
-dependencies.tar.gz
+*.tar.gz
