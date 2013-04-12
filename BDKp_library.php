@@ -981,26 +981,26 @@
 		*/
 		
 		
-			/*
+			/**
 				bdk_encode_message()
 				Purpose: Dummy function to promote consistancy with code. For example if this library is realeased and it is found that base64_encode() dosen't do the job right and we need to change it, a dev can just upload an update with out any issues(other than the expected signature verification incompatiblities)
-			*/
+			**/
 			function bdk_encode_message($plain_text_string){
 				return base64_encode($plain_text_string);
 			}
 			
-			/*
+			/**
 				bdk_decode_message()
 				Purpose: Dummy function to promote consistancy with code. For example if this library is realeased and it is found that base64_encode() dosen't do the job right and we need to change it, a dev can just upload an update with out any issues(other than the expected signature verification incompatiblities)
-			*/
+			**/
 			function bdk_decode_message($plain_text_string){
 				return base64_decode($plain_text_string);
 			}
 			
-			/*
+			/**
 				bdk_verify_checksum()
 				Purpose: a simple function to call for verifying a checksum with its inputted contents
-			*/
+			**/
 			function bdk_verify_checksum($original_string='', $checksum_string='', $checksum_algo=''){
 				global $bdk_settings;
 				
@@ -1110,6 +1110,71 @@
 					$output["return_status"] = 1;
 				}else{
 					$output["return_status"] = 100;
+				}
+				
+				return $output;
+			}
+			
+			/**
+				bdk_satoshi_to_bitcoin_display()
+				Notes
+					Don't ever rely on this function,
+					
+				Purpose
+					Easily convert "satoshi" integer values to Bitcoin "decimal" value.
+					
+					
+				Parameter Explanation
+					satoshi_value | integer | the integer you want to convert into a decimal (Satoshi to BTC display value)
+				
+				Output Explanation
+					Return Status
+						-1 = Epic Failure
+							Notes: This function magically did not run, 
+							Reailty as we know it probubly ended if this happened.
+						
+						1 = Success 
+							Notes: If success, then this function ran with out errors and
+							all output data is considered "useable".
+							
+						100 = Failed;
+							This function isn't being used properly 
+							the inputted value is not an integer
+			**/
+			function bdk_satoshi_to_bitcoin_display($satoshi_value, $round_type=0){
+				//Define local variables
+				$output["return_status"] = -1;
+				$output["btc_display"] = (double)0.00000000;
+				
+				//Check if inputs are valid and deal with invalid ones
+				$process_func = 1;
+				if(is_int($satoshi_value) == true){
+					$proccess_func = 1;
+				}else{
+					/*
+						Satoshi value is not an integer, thats okay, 
+						convert to integer and see if they are still the same values.
+						If they are the same values after converting to int, proccess,
+						If not, then don't proccess
+					*/
+					$tmp_int_value = (int) floor($satoshi_value);
+					if($tmp_int_value == $satoshi_value){
+						$proccess_func = 1;
+					}else{
+						$proccess_func = 0;
+					}	
+				}
+				
+				if($proccess_func == 0){
+					//Satoshi value is not an integer this function is not being used properly!
+					$output["return_status"] = 100;
+					
+				}else if($proccess_func == 1){
+					//Everything looks good, do calculation.
+					$tmp_btc_display = $satoshi_value / 100000000;
+					$output["btc_display"] = (double) $tmp_btc_display;
+					
+					$output["return_status"] = 1;
 				}
 				
 				return $output;
