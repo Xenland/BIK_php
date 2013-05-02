@@ -729,8 +729,8 @@
 
 			//Define local/private variables
 			$output["return_status"] = -1;
-			$output["total_received_in_satoshi"] = (int) 0; //Integers only
-			$output["total_received_in_bitcoin"] = (double) 0.00000000; //Decimal/Float/Double (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
+			$output["balance_in_satoshi"] = (int) 0; //Integers only
+			$output["balance_in_bitcoin"] = (double) 0.00000000; //Decimal/Float/Double (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
 
 
 			//Sanatize incomming parameters
