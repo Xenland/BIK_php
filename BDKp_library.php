@@ -691,7 +691,98 @@
 			return $output;
 		}
 		
-		
+			/**
+			bitcoin_get_balance()
+
+			Purpose
+				Query Bitcoin and return the balance on an account
+
+			Parameter Explanation
+					bitcoin_address_label | (optional) | The label for an address you own and want to check the current balance of. (sums all of wallet if blank)
+				  minimum_confirmations | (optional) | min confirmations required to match the criteria.
+
+			Output Explanation
+				Return Status
+					-1 = Epic Failure
+						Notes: This function magically did not run,
+						Reailty as we know it probubly ended if this happened.
+
+					 1 = Success
+						Notes: If success, then this function ran with out errors and
+						all output data is considered "useable".
+
+					100 = Failure to connect to Bitcoin client
+					101 = Failure to retrieve balance
+
+				total received in satoshi
+					The amount of Bitcoins in total received to this address
+					in the integer (1 = 1 satoshi = 0.00000001 Bitcoins)
+
+				total received in bitcoin
+					(DO NOT USE THIS WITH FORMULAS)
+					The amount of Bitcoins in total received to this address
+					in the decimal/float/double format.
+
+		**/
+		function bitcoin_get_balance($bitcoin_address_label='', $minimum_confirmations=1){
+			global $bdk_integrity_check, $bdk_settings;
+
+			//Define local/private variables
+			$output["return_status"] = -1;
+			$output["balance_in_satoshi"] = (int) 0; //Integers only
+			$output["balance_in_bitcoin"] = (double) 0.00000000; //Decimal/Float/Double (THIS IS FOR ONLY DISPLAYING THE TOTAL RECEIVED BALANCE IN BITCOIN , NOT FOR DOING MATH AGAINST!!! Do math in satoshi only)
+
+
+			//Sanatize incomming parameters
+				$bitcoin_address_label	= strip_tags($bitcoin_address_label); //I went with strip_tags for now, all I can think of is perhaps someone enables error reporting somehow and made the Bitcoin address into a XSS/XSRF attack made up of a string of javavscript)
+				$minimum_confirmations	= (int) floor($minimum_confirmations); //Make integer(if for some reason it came in as a decimal)
+
+			//Create a floor limit of zero
+				if($minimum_confirmations <= 0){
+					$minimum_confirmations = 0;
+				}
+
+				//Open Bitcoin connection
+					$new_btcclient_connection = bitcoin_open_connection();
+
+				//Bitcoin connection open?
+					if($new_btcclient_connection["return_status"] == 1){
+
+						//Define command executed
+						$tmp_command_executed = 0; // (Binary)
+						try{
+							$tmp_total_received_in_bitcoin = $new_btcclient_connection["connection"]->getbalance($bitcoin_address_label, $minimum_confirmations);
+							$tmp_command_executed = 1;
+						}catch(Exception $e){
+							$tmp_command_executed = 0;
+						}
+
+
+						//Looks like the command was successfully queried, lets continue with execution of the rest of this function
+						if($tmp_command_executed == 1){
+							if($tmp_total_received_in_bitcoin >= 0){
+								//Looks like a success!
+								$output["return_status"] = 1;
+
+								//Return the values....
+								$output["balance_in_bitcoin"] = (double) $tmp_total_received_in_bitcoin;
+								$output["balance_in_satoshi"] = (int) floor($tmp_total_received_in_bitcoin * 100000000); //Convert Bitcoins to satoshi so we can do math with integers.
+
+							}else{
+								//Failure
+								$output["return_status"] = 101;
+							}
+						}else{
+							//Failure to query command from Bitcoind, return failure status
+							$output["return_status"] = 101;
+						}
+					}else{
+						//Connection to Bitcoin failed
+						$output["return_status"] = 100;
+					}
+
+			return $output;
+		}
 		
 		/**
 			bitcoin_sendfrom()
