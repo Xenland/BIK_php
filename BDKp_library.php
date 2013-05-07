@@ -828,7 +828,7 @@
 			
 			//Convert amount in satoshi to bitcoin decimal
 			$amount_in_satoshi = (int) $amount_in_satoshi;
-			$amount_in_bitcoins = (double) ($amount_in_satoshi / 10000000);
+			$amount_in_bitcoins = (double) ($amount_in_satoshi / 100000000);
 			if($amount_in_bitcoins < 0.0){
 				$amount_in_bitcoins = 0.0;
 			}
