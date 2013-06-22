@@ -21,7 +21,7 @@ Aimed at assisting in cutting down development time to integrate Bitcoins' funct
 * SSL support (if you're using HTTPS to communicate to bitcoind with)
 
 ###(Offcial) Bitcoin Donation Address
-    13ow3MfnbksrSxdcmZZvkhtv4mudsnQeLh
+    (none yet 2013/July)
     
 Please donate if you currently use and appreciate this software, I plan to continually update this library as new versions of Bitcoin is released.
 
